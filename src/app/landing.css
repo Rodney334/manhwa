@@ -1,0 +1,345 @@
+/* ─── Landing page — palette Dancheong / Hanji / Encre (manhwalist-v3-final.html) ───
+   Scopé sous .lp pour ne jamais interférer avec le thème sombre de l'app.
+──────────────────────────────────────────────────────────────────────────────── */
+
+.lp {
+  --encre-900: #0e1117;
+  --encre-800: #141822;
+  --encre-700: #1b202c;
+  --noerok: #4e9a86;
+  --noerok-vif: #63c1a6;
+  --noerok-sourd: rgba(78, 154, 134, 0.14);
+  --geumbak: #d4a94e;
+  --geumbak-vif: #f0c976;
+  --jujeon: #c2453c;
+  --hanji: #ede7dc;
+  --hanji-sourd: #a8aeb2;
+  --hanji-faible: #6c7386;
+  --trait: rgba(237, 231, 220, 0.09);
+  --trait-fort: rgba(237, 231, 220, 0.18);
+  --display: "Black Han Sans", system-ui, sans-serif;
+
+  position: relative;
+  background: var(--encre-900);
+  color: var(--hanji);
+  overflow-x: clip;
+}
+
+.lp ::selection {
+  background: var(--noerok);
+  color: var(--encre-900);
+}
+
+.lp .aurore {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.lp .aurore i {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.4;
+  will-change: transform;
+}
+.lp .aurore i:nth-child(1) {
+  width: 620px;
+  height: 620px;
+  background: var(--noerok);
+  top: -18%;
+  left: -12%;
+  animation: lp-d1 28s ease-in-out infinite;
+}
+.lp .aurore i:nth-child(2) {
+  width: 560px;
+  height: 560px;
+  background: var(--jujeon);
+  top: 22%;
+  right: -16%;
+  animation: lp-d2 34s ease-in-out infinite;
+}
+.lp .aurore i:nth-child(3) {
+  width: 520px;
+  height: 520px;
+  background: var(--geumbak);
+  bottom: -16%;
+  left: 18%;
+  animation: lp-d3 31s ease-in-out infinite;
+}
+
+@keyframes lp-d1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(120px, 90px) scale(1.15); }
+}
+@keyframes lp-d2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-140px, 60px) scale(0.88); }
+}
+@keyframes lp-d3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(90px, -110px) scale(1.1); }
+}
+
+.lp .grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.14;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.lp .contenu {
+  position: relative;
+  z-index: 2;
+}
+
+.lp .barre {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: 16px 6vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: rgba(14, 17, 23, 0.7);
+  backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid var(--trait);
+}
+
+.lp .logo {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--hanji);
+  text-decoration: none;
+}
+.lp .logo em {
+  font-style: normal;
+  background: linear-gradient(92deg, var(--noerok), var(--noerok-vif));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.lp .logo b {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--noerok);
+  animation: lp-bat 2.6s infinite;
+}
+@keyframes lp-bat {
+  0% { box-shadow: 0 0 0 0 rgba(78, 154, 134, 0.5); }
+  70% { box-shadow: 0 0 0 14px rgba(78, 154, 134, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(78, 154, 134, 0); }
+}
+
+.lp .nav-links {
+  display: flex;
+  gap: 26px;
+  font-size: 14px;
+  color: var(--hanji-sourd);
+}
+.lp .nav-links a {
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  transition: color 0.25s;
+}
+.lp .nav-links a:hover {
+  color: var(--hanji);
+}
+@media (max-width: 860px) {
+  .lp .nav-links { display: none; }
+}
+
+.lp .cta {
+  position: relative;
+  overflow: hidden;
+  padding: 12px 24px;
+  border-radius: 100px;
+  background: var(--hanji);
+  color: var(--encre-900);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: box-shadow 0.35s, transform 0.2s;
+}
+.lp .cta:hover {
+  box-shadow: 0 0 0 4px rgba(237, 231, 220, 0.12);
+  transform: translateY(-1px);
+}
+.lp .cta--outline {
+  background: transparent;
+  color: var(--hanji);
+  border: 1px solid var(--trait-fort);
+}
+.lp .cta--outline:hover {
+  border-color: var(--noerok);
+  box-shadow: 0 0 0 4px var(--noerok-sourd);
+}
+
+.lp .heros {
+  padding: 120px 6vw 90px;
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+.lp .oeil {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--noerok-vif);
+  border: 1px solid var(--trait-fort);
+  border-radius: 100px;
+  padding: 6px 14px;
+}
+.lp h1.titre {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(34px, 6vw, 62px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  max-width: 800px;
+}
+.lp h1.titre em {
+  font-style: normal;
+  background: linear-gradient(92deg, var(--noerok), var(--noerok-vif));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.lp .sous {
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: var(--hanji-sourd);
+  max-width: 560px;
+}
+.lp .heros-ctas {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.lp .sec {
+  padding: 70px 6vw;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.lp .sec__t {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--noerok-vif);
+  margin-bottom: 10px;
+}
+.lp .sec h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(24px, 3.4vw, 34px);
+  letter-spacing: -0.01em;
+  max-width: 640px;
+  margin-bottom: 14px;
+}
+.lp .sec p.desc {
+  color: var(--hanji-sourd);
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 560px;
+}
+
+.lp .grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 36px;
+}
+.lp .carte {
+  background: var(--encre-800);
+  border: 1px solid var(--trait);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.3s, transform 0.3s;
+}
+.lp .carte:hover {
+  border-color: var(--trait-fort);
+  transform: translateY(-2px);
+}
+.lp .carte i.ic {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--noerok-sourd);
+  color: var(--noerok-vif);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal;
+  font-size: 15px;
+}
+.lp .carte b {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.lp .carte span {
+  font-size: 13px;
+  color: var(--hanji-sourd);
+  line-height: 1.55;
+}
+
+.lp .final {
+  padding: 100px 6vw 120px;
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.lp .final h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(28px, 4.5vw, 44px);
+  letter-spacing: -0.02em;
+}
+
+.lp .pied {
+  border-top: 1px solid var(--trait);
+  padding: 28px 6vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--hanji-faible);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp * {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}

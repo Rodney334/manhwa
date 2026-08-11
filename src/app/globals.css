@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* ─── Design tokens — maquette ManhwaList (manhwalist-app.html) ─────────────
+   Fond quasi noir, accent vert unique, typographies Black Han Sans (logo /
+   display), Plus Jakarta Sans (texte), JetBrains Mono (chiffres / data).
+───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --fond: #0a0b0d;
+  --sur: #121417;
+  --sur2: #181b1f;
+  --sur3: #1f2328;
+  --ligne: rgba(255, 255, 255, 0.075);
+  --ligne2: rgba(255, 255, 255, 0.14);
+
+  --txt: #e9ebee;
+  --txt2: #a2a8b0;
+  --txt3: #6b7178;
+
+  --vert: #26e07e;
+  --vert-b: #0f3a25;
+  --vert-t: rgba(38, 224, 126, 0.12);
+
+  --rouge: #e5484d;
+  --rouge-t: rgba(229, 72, 77, 0.12);
+  --or: #d4a94e;
+  --or-t: rgba(212, 169, 78, 0.13);
+
+  --r: 12px;
+  --sortie: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --font-ui: var(--font-jakarta), "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace;
+  --font-ko: var(--font-blackhan), "Black Han Sans", sans-serif;
+}
+
+@theme {
+  --color-fond: #0a0b0d;
+  --color-sur: #121417;
+  --color-sur2: #181b1f;
+  --color-sur3: #1f2328;
+  --color-ligne: rgba(255, 255, 255, 0.075);
+  --color-ligne2: rgba(255, 255, 255, 0.14);
+
+  --color-txt: #e9ebee;
+  --color-txt2: #a2a8b0;
+  --color-txt3: #6b7178;
+
+  --color-vert: #26e07e;
+  --color-vert-b: #0f3a25;
+  --color-vert-t: rgba(38, 224, 126, 0.12);
+
+  --color-rouge: #e5484d;
+  --color-rouge-t: rgba(229, 72, 77, 0.12);
+  --color-or: #d4a94e;
+  --color-or-t: rgba(212, 169, 78, 0.13);
+
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-ko);
+
+  --radius-r: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-fond);
+  color: var(--color-txt);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-vert);
+  color: #05130c;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-vert);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-sur3);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ligne2);
+}
+
+@keyframes bat {
+  0% {
+    box-shadow: 0 0 0 0 rgba(38, 224, 126, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(38, 224, 126, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(38, 224, 126, 0);
+  }
+}
+
+.pastille-vive {
+  animation: bat 2.6s infinite;
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.toast-anim {
+  animation: toast-in 0.3s var(--sortie);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
