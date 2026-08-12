@@ -110,8 +110,12 @@ export default function AdminUserDetailPage() {
 
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-[12.5px] text-txt3 font-mono">
           <span>Rôle : {user.role}</span>
-          <span>Inscrit {formatRelative(user.createdAt)}</span>
-          {user.lastLoginAt && <span>Dernière connexion {formatRelative(user.lastLoginAt)}</span>}
+          <span suppressHydrationWarning>Inscrit {formatRelative(user.createdAt)}</span>
+          {user.lastLoginAt && (
+            <span suppressHydrationWarning>
+              Dernière connexion {formatRelative(user.lastLoginAt)}
+            </span>
+          )}
         </div>
 
         {user.statusReason && (

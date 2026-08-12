@@ -26,7 +26,7 @@ export default function AdminOverviewPage() {
   if (erreur) {
     return (
       <p className="text-[13.5px] text-txt3 py-24 text-center">
-        La vue d'ensemble n'a pas pu être chargée.
+        La vue d&apos;ensemble n&apos;a pas pu être chargée.
       </p>
     );
   }
@@ -47,9 +47,9 @@ export default function AdminOverviewPage() {
   return (
     <div className="flex flex-col gap-9 max-w-4xl">
       <div>
-        <h1 className="font-display text-[28px] font-normal">Vue d'ensemble</h1>
+        <h1 className="font-display text-[28px] font-normal">Vue d&apos;ensemble</h1>
         <p className="text-[13.5px] text-txt3 mt-1">
-          Ce qui se passe réellement sur la plateforme, en un coup d'œil.
+          Ce qui se passe réellement sur la plateforme, en un coup d&apos;œil.
         </p>
       </div>
 
@@ -89,8 +89,8 @@ export default function AdminOverviewPage() {
           <span className="text-txt font-medium">{data.accounts?.active ?? 0}</span> comptes ne sont
           pas suspendus, mais seuls{" "}
           <span className="text-or font-medium">{data.engagement?.readersLast30Days ?? 0}</span> ont
-          réellement fait avancer une lecture ces 30 derniers jours — c'est ce dernier chiffre
-          qui reflète l'usage réel.
+          réellement fait avancer une lecture ces 30 derniers jours — c&apos;est ce dernier chiffre
+          qui reflète l&apos;usage réel.
         </p>
       </div>
 

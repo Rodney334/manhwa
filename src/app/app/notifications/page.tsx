@@ -85,6 +85,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleMarkRead(id: string) {
@@ -165,7 +166,9 @@ export default function NotificationsPage() {
                     <p className="text-[13.5px] font-medium truncate">{title}</p>
                   </div>
                   <p className="text-[13px] text-txt2 mt-0.5">{message}</p>
-                  <p className="text-[11px] text-txt3 font-mono mt-1">{formatRelative(n.createdAt)}</p>
+                  <p className="text-[11px] text-txt3 font-mono mt-1" suppressHydrationWarning>
+                    {formatRelative(n.createdAt)}
+                  </p>
                 </div>
               </div>
             );
