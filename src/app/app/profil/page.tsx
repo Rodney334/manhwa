@@ -7,8 +7,9 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { toast } from "@/lib/stores/toast.store";
 import { Spinner } from "@/components/ui/Primitives";
 import { ApiError } from "@/lib/api/client";
-import { Loader2, TriangleAlert } from "lucide-react";
+import { Loader2, TriangleAlert, Smartphone } from "lucide-react";
 import type { User } from "@/types";
+import { InstallButton } from "@/components/features/InstallButton";
 
 export default function ProfilPage() {
   const router = useRouter();
@@ -61,6 +62,18 @@ export default function ProfilPage() {
       />
 
       <PasswordForm />
+
+      <div className="rounded-2xl border border-ligne bg-sur/60 p-6 flex flex-col gap-3">
+        <div className="flex items-center gap-2 text-txt3">
+          <Smartphone size={16} />
+          <h2 className="font-display text-[17px] font-normal text-txt">Application mobile</h2>
+        </div>
+        <p className="text-[12.5px] text-txt3">
+          Installe ManhwaList sur ton téléphone pour y accéder comme une vraie app, en plein
+          écran.
+        </p>
+        <InstallButton variant="panel" />
+      </div>
 
       <DangerZone
         onDeleted={() => {
