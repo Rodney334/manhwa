@@ -1,124 +1,139 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { libraryService } from "@/lib/services/library.service";
-import { ContinueCard } from "@/components/features/LibraryCard";
-import { EmptyState, Spinner } from "@/components/ui/Primitives";
-import { toast } from "@/lib/stores/toast.store";
-import { ApiError } from "@/lib/api/client";
-import type { LibraryEntry } from "@/types";
-import { BookOpen, PartyPopper } from "lucide-react";
 import Link from "next/link";
+import "./landing.css";
 
-const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-const MOIS = [
-  "janvier", "février", "mars", "avril", "mai", "juin",
-  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+const FEATURES = [
+  {
+    icon: "◐",
+    title: "Reprendre",
+    text: "Trié par retard, pas par date : la série la plus en arrière est celle qu'on abandonne.",
+  },
+  {
+    icon: "+1",
+    title: "+1 en un geste",
+    text: "Avance ta progression sans quitter la liste. Un tap, un chapitre de plus.",
+  },
+  {
+    icon: "▦",
+    title: "Bibliothèque",
+    text: "En cours, en pause, terminé, abandonné, à lire — filtre par statut, genre ou favoris.",
+  },
+  {
+    icon: "⌕",
+    title: "Recherche",
+    text: "Titre, titre alternatif ou auteur, sur tout le catalogue commun.",
+  },
+  {
+    icon: "◉",
+    title: "Notifications",
+    text: "Un nouveau chapitre sort, tu le sais — sans avoir à revérifier chaque série un par un.",
+  },
+  {
+    icon: "↗",
+    title: "Partage",
+    text: "Un lien public, en lecture seule, vers ta bibliothèque. Rien à installer côté visiteur.",
+  },
+  {
+    icon: "◧",
+    title: "Statistiques",
+    text: "Chapitres lus, note moyenne, répartition par statut — ta lecture, en chiffres.",
+  },
 ];
 
-export default function AccueilPage() {
-  const [entries, setEntries] = useState<LibraryEntry[] | null>(null);
-  const [hasLibraryEntries, setHasLibraryEntries] = useState<boolean | null>(null);
-
-  async function load() {
-    try {
-      const [continueData, stats] = await Promise.all([
-        libraryService.continueReading(20),
-        libraryService.stats(),
-      ]);
-      setEntries(continueData);
-      setHasLibraryEntries(stats.totalEntries > 0);
-    } catch {
-      toast.error("Impossible de charger ta reprise.");
-      setEntries([]);
-    }
-  }
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  // Le backend masque désormais une série de "Reprendre" dès qu'une lecture
-  // vient d'y être enregistrée — même s'il reste du retard — et ne la fait
-  // réapparaître que si un nouveau chapitre paraît ensuite. On retire donc
-  // la carte localement après tout incrément réussi, sans condition.
-  async function handleIncrement(id: string) {
-    try {
-      await libraryService.increment(id, 1);
-      setEntries((prev) => prev?.filter((e) => e._id !== id) ?? prev);
-      toast.success("+1 chapitre");
-    } catch (e) {
-      // Le backend renvoie volontairement un 400 quand on est déjà au
-      // dernier chapitre connu — ce n'est pas un échec, juste un signal
-      // qu'il n'y a plus rien à lire pour l'instant sur cette série.
-      if (e instanceof ApiError && e.status === 400) {
-        setEntries((prev) => prev?.filter((entry) => entry._id !== id) ?? prev);
-        toast.info("Tu es déjà à jour sur cette série.");
-        return;
-      }
-      toast.error("Échec de la mise à jour.");
-      load();
-    }
-  }
-
-  const now = new Date();
-  const today = `${JOURS[now.getDay()]} ${now.getDate()} ${MOIS[now.getMonth()]}`;
-
+export default function LandingPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <p className="text-[12px] font-mono text-txt3 uppercase tracking-wider">{today}</p>
-        <h1 className="font-display text-[28px] font-normal mt-1">Reprendre</h1>
-        <p className="text-[13.5px] text-txt3 mt-1 max-w-lg">
-          Trié par retard, pas par date : la série la plus en arrière est celle qu&apos;on abandonne.
-        </p>
+    <div className="lp">
+      <div className="aurore" aria-hidden>
+        <i />
+        <i />
+        <i />
       </div>
+      <div className="grain" aria-hidden />
 
-      {entries === null && (
-        <div className="flex justify-center py-20">
-          <Spinner />
-        </div>
-      )}
+      <div className="contenu">
+        <header className="barre">
+          <Link href="/" className="logo">
+            <b />
+            <em>Manhwa</em>List
+          </Link>
+          <nav className="nav-links">
+            <a href="#fonctionnalites">Fonctionnalités</a>
+            <a href="#stats">En chiffres</a>
+          </nav>
+          <Link href="/login" className="cta cta--outline">
+            Se connecter
+          </Link>
+        </header>
 
-      {entries !== null && entries.length === 0 && hasLibraryEntries && (
-        <EmptyState
-          icon={<PartyPopper size={28} />}
-          title="Tu as tout repris pour l'instant"
-          subtitle="Reviens ici dès qu'un nouveau chapitre sort sur l'une de tes séries en cours."
-          action={
-            <Link
-              href="/app/bibliotheque?status=reading&sort=progress"
-              className="mt-1 inline-flex items-center gap-2 text-[13px] text-vert hover:underline"
-            >
-              Voir tout mon retard quand même
+        <section className="heros">
+          <span className="oeil">catalogue commun · sans doublon</span>
+          <h1 className="titre">
+            Ne perdez plus jamais <em>le fil</em>.
+          </h1>
+          <p className="sous">
+            Une bibliothèque unique pour tous vos manhwas, manhuas et webtoons en cours. Suivez
+            votre progression, retrouvez où vous en étiez, et ne relisez jamais deux fois le même
+            chapitre.
+          </p>
+          <div className="heros-ctas">
+            <Link href="/register" className="cta">
+              Créer un compte gratuit
             </Link>
-          }
-        />
-      )}
-
-      {entries !== null && entries.length === 0 && hasLibraryEntries === false && (
-        <EmptyState
-          icon={<BookOpen size={28} />}
-          title="Rien à reprendre pour l'instant"
-          subtitle="Ajoute des séries à ta bibliothèque pour les retrouver ici, triées par retard de lecture."
-          action={
-            <Link
-              href="/app/chercher"
-              className="mt-1 inline-flex items-center gap-2 bg-vert text-[#05130c] text-[13.5px] font-medium rounded-lg px-4 py-2 hover:brightness-110 transition-all"
-            >
-              Chercher un manhwa
+            <Link href="/login" className="cta cta--outline">
+              J&apos;ai déjà un compte
             </Link>
-          }
-        />
-      )}
+          </div>
+        </section>
 
-      {entries !== null && entries.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {entries.map((entry) => (
-            <ContinueCard key={entry._id} entry={entry} onIncrement={handleIncrement} />
-          ))}
-        </div>
-      )}
+        <section className="sec" id="fonctionnalites">
+          <div className="sec__t">fonctionnalités</div>
+          <h2>Tout ce qu&apos;il faut, rien de plus.</h2>
+          <p className="desc">
+            Une interface pensée pour la lecture régulière : reprendre vite, ajouter en un geste,
+            et une vue d&apos;ensemble toujours à jour.
+          </p>
+          <div className="grille">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="carte">
+                <i className="ic">{f.icon}</i>
+                <b>{f.title}</b>
+                <span>{f.text}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="sec" id="stats">
+          <div className="sec__t">en chiffres</div>
+          <h2>Un catalogue qui grandit avec ses lecteurs.</h2>
+          <div className="grille" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+            <div className="carte">
+              <b style={{ fontSize: 26, fontFamily: "var(--display)", fontWeight: 400 }}>0 doublon</b>
+              <span>Dédoublonnage automatique à la soumission d&apos;une fiche.</span>
+            </div>
+            <div className="carte">
+              <b style={{ fontSize: 26, fontFamily: "var(--display)", fontWeight: 400 }}>3 sources</b>
+              <span>MangaDex, AniList et Jikan pour importer une fiche en un clic.</span>
+            </div>
+            <div className="carte">
+              <b style={{ fontSize: 26, fontFamily: "var(--display)", fontWeight: 400 }}>100% gratuit</b>
+              <span>Aucune fonctionnalité de suivi cachée derrière un abonnement.</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="final">
+          <h2>Reprends là où tu t&apos;es arrêté.</h2>
+          <p className="sous">Trois champs pour créer ton compte. Pas d&apos;e-mail de confirmation à attendre.</p>
+          <Link href="/register" className="cta">
+            Commencer
+          </Link>
+        </section>
+
+        <footer className="pied">
+          <span suppressHydrationWarning>© {new Date().getFullYear()} ManhwaList</span>
+          <span>Fait pour les lecteurs qui suivent trop de séries à la fois.</span>
+        </footer>
+      </div>
     </div>
   );
 }
