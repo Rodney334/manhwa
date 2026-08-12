@@ -337,6 +337,16 @@
   gap: 10px;
 }
 
+.lp .pied-lien {
+  color: var(--hanji-faible);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.lp .pied-lien:hover {
+  color: var(--vert);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lp * {
     animation: none !important;

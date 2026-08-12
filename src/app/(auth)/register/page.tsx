@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,9 +78,26 @@ export default function RegisterPage() {
 
         {error && <p className="text-[12.5px] text-rouge">{error}</p>}
 
+        <label className="flex items-start gap-2.5 text-[12.5px] text-txt3">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            required
+            className="mt-0.5 accent-vert w-3.5 h-3.5 shrink-0"
+          />
+          <span>
+            J&apos;ai lu et j&apos;accepte les{" "}
+            <Link href="/cgu" target="_blank" className="text-vert hover:underline">
+              conditions générales d&apos;utilisation
+            </Link>
+            .
+          </span>
+        </label>
+
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !acceptedTerms}
           className="mt-1 flex items-center justify-center gap-2 bg-vert text-[#05130c] font-medium text-[14px] rounded-lg py-2.5 hover:brightness-110 transition-all disabled:opacity-60"
         >
           {loading && <Loader2 size={15} className="animate-spin" />}

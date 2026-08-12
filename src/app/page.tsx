@@ -132,6 +132,9 @@ export default function LandingPage() {
         <footer className="pied">
           <span suppressHydrationWarning>© {new Date().getFullYear()} ManhwaList</span>
           <span>Fait pour les lecteurs qui suivent trop de séries à la fois.</span>
+          <Link href="/cgu" className="pied-lien">
+            Conditions générales d&apos;utilisation
+          </Link>
         </footer>
       </div>
     </div>
