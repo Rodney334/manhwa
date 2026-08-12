@@ -29,7 +29,7 @@ export interface LibraryComparison {
 }
 
 export interface ReadingWrapped {
-  period: "month" | "year";
+  period: "month" | "year" | "last-month" | "last-year";
   from: string;
   to: string;
   totalChaptersRead: number;
@@ -148,7 +148,7 @@ export const libraryService = {
     return api.get<LibraryComparison>(`/api/v1/library/compare/${encodeURIComponent(token)}`);
   },
 
-  wrapped(period: "month" | "year" = "month") {
+  wrapped(period: "month" | "year" | "last-month" | "last-year" = "month") {
     return api.get<ReadingWrapped>("/api/v1/library/wrapped", { params: { period } });
   },
 };

@@ -1,10 +1,12 @@
 import { AuthGuard } from "@/components/features/AuthGuard";
 import { Sidebar } from "@/components/features/Sidebar";
 import { Topbar } from "@/components/features/Topbar";
+import { AppBadgeSync } from "@/components/features/AppBadgeSync";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
+      <AppBadgeSync />
       <div className="flex min-h-screen bg-fond">
         <Sidebar />
         <div className="flex-1 min-w-0 flex flex-col">

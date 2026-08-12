@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { libraryService, type ReadingWrapped } from "@/lib/services/library.service";
 import { Cover } from "@/components/features/Cover";
 import { Spinner } from "@/components/ui/Primitives";
@@ -12,8 +13,28 @@ const JOURS = [
   "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi",
 ];
 
+type Period = "month" | "year" | "last-month" | "last-year";
+
+function isValidPeriod(value: string | null): value is Period {
+  return value === "month" || value === "year" || value === "last-month" || value === "last-year";
+}
+
+// `useSearchParams()` exige une frontière Suspense en Next 15 — isolée ici
+// pour que la page qui accueille cette carte n'ait pas à s'en soucier.
 export function ReadingWrappedCard() {
-  const [period, setPeriod] = useState<"month" | "year">("month");
+  return (
+    <Suspense fallback={<div className="flex justify-center py-16"><Spinner /></div>}>
+      <ReadingWrappedCardContent />
+    </Suspense>
+  );
+}
+
+function ReadingWrappedCardContent() {
+  const searchParams = useSearchParams();
+  const deepLinkedPeriod = searchParams.get("period");
+  const initialPeriod: Period = isValidPeriod(deepLinkedPeriod) ? deepLinkedPeriod : "month";
+
+  const [period, setPeriod] = useState<Period>(initialPeriod);
   const [wrapped, setWrapped] = useState<ReadingWrapped | null>(null);
   const [exporting, setExporting] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -47,6 +68,13 @@ export function ReadingWrappedCard() {
       setExporting(false);
     }
   }
+
+  const periodLabel: Record<Period, string> = {
+    month: "Bilan du mois",
+    year: "Bilan de l'année",
+    "last-month": "Bilan du mois dernier",
+    "last-year": "Bilan de l'année dernière",
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -100,7 +128,7 @@ export function ReadingWrappedCard() {
             </div>
 
             <p className="text-[11px] font-mono uppercase tracking-wider text-txt3 mt-6">
-              {period === "month" ? "Bilan du mois" : "Bilan de l'année"}
+              {periodLabel[period]}
             </p>
 
             <div className="mt-1">
