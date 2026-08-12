@@ -7,15 +7,17 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { toast } from "@/lib/stores/toast.store";
 import { Spinner } from "@/components/ui/Primitives";
 import { ApiError } from "@/lib/api/client";
-import { Loader2, TriangleAlert, Smartphone } from "lucide-react";
+import { Loader2, TriangleAlert, Smartphone, HelpCircle } from "lucide-react";
 import type { User } from "@/types";
 import { InstallButton } from "@/components/features/InstallButton";
+import { useOnboardingStore } from "@/lib/stores/onboarding.store";
 
 export default function ProfilPage() {
   const router = useRouter();
   const authUser = useAuthStore((s) => s.user);
   const setAuthUser = useAuthStore((s) => s.setUser);
   const logout = useAuthStore((s) => s.logout);
+  const openOnboarding = useOnboardingStore((s) => s.open);
 
   const [user, setUser] = useState<User | null>(authUser);
   const [loading, setLoading] = useState(!authUser);
@@ -73,6 +75,23 @@ export default function ProfilPage() {
           écran.
         </p>
         <InstallButton variant="panel" />
+      </div>
+
+      <div className="rounded-2xl border border-ligne bg-sur/60 p-6 flex flex-col gap-3">
+        <div className="flex items-center gap-2 text-txt3">
+          <HelpCircle size={16} />
+          <h2 className="font-display text-[17px] font-normal text-txt">Besoin d&apos;un rappel ?</h2>
+        </div>
+        <p className="text-[12.5px] text-txt3">
+          Revois le tour de bienvenue à tout moment, si tu veux te rafraîchir la mémoire sur
+          une fonctionnalité.
+        </p>
+        <button
+          onClick={() => openOnboarding()}
+          className="self-start flex items-center gap-2 text-[13.5px] font-medium rounded-lg px-4 py-2.5 bg-sur2 border border-ligne text-txt2 hover:border-ligne2 transition-colors"
+        >
+          Revoir le tutoriel
+        </button>
       </div>
 
       <DangerZone

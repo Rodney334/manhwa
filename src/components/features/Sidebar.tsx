@@ -27,18 +27,18 @@ import {
 } from "lucide-react";
 
 const LIRE = [
-  { href: "/app", label: "Reprendre", icon: CircleDot },
-  { href: "/app/bibliotheque", label: "Bibliothèque", icon: LayoutGrid },
-  { href: "/app/chercher", label: "Chercher", icon: Search },
-  { href: "/app/calendrier", label: "Calendrier", icon: CalendarDays },
-  { href: "/app/decouvrir", label: "Découvrir", icon: Sparkles },
-  { href: "/app/statistiques", label: "Statistiques", icon: BarChart3 },
+  { href: "/app", label: "Reprendre", icon: CircleDot, tourId: "reprendre" },
+  { href: "/app/bibliotheque", label: "Bibliothèque", icon: LayoutGrid, tourId: "bibliotheque" },
+  { href: "/app/chercher", label: "Chercher", icon: Search, tourId: "chercher" },
+  { href: "/app/calendrier", label: "Calendrier", icon: CalendarDays, tourId: "calendrier" },
+  { href: "/app/decouvrir", label: "Découvrir", icon: Sparkles, tourId: "decouvrir" },
+  { href: "/app/statistiques", label: "Statistiques", icon: BarChart3, tourId: "statistiques" },
 ];
 
 const COMPTE = [
-  { href: "/app/notifications", label: "Notifications", icon: Bell },
-  { href: "/app/partage", label: "Partage", icon: Share2 },
-  { href: "/app/profil", label: "Profil", icon: UserCog },
+  { href: "/app/notifications", label: "Notifications", icon: Bell, tourId: "notifications" },
+  { href: "/app/partage", label: "Partage", icon: Share2, tourId: "partage" },
+  { href: "/app/profil", label: "Profil", icon: UserCog, tourId: "profil" },
 ];
 
 const ADMIN = [
@@ -55,18 +55,21 @@ function NavLink({
   Icon,
   active,
   onClick,
+  tourId,
 }: {
   href: string;
   label: string;
   Icon: React.ElementType;
   active: boolean;
   onClick?: () => void;
+  tourId?: string;
 }) {
   return (
     <Link
       href={href}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
+      data-tour={tourId}
       className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] transition-colors ${active
           ? "bg-vert-t text-vert font-medium"
           : "text-txt2 hover:text-txt hover:bg-sur2"
@@ -128,6 +131,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               Icon={item.icon}
               active={pathname === item.href}
               onClick={onNavigate}
+              tourId={item.tourId}
             />
           ))}
         </div>
@@ -144,6 +148,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               Icon={item.icon}
               active={pathname === item.href}
               onClick={onNavigate}
+              tourId={item.tourId}
             />
           ))}
         </div>

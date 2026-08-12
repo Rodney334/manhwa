@@ -134,6 +134,23 @@ body {
   animation: toast-in 0.3s var(--sortie);
 }
 
+/* Tour de bienvenue — confettis de l'écran final. */
+.confetti-piece {
+  position: fixed;
+  top: -20px;
+  width: 8px;
+  height: 8px;
+  opacity: 0.9;
+  animation: confetti-fall 2.2s ease-in forwards;
+}
+
+@keyframes confetti-fall {
+  to {
+    top: 100vh;
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
