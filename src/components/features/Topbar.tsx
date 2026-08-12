@@ -2,9 +2,10 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, Menu } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { useNotificationsStore } from "@/lib/stores/notifications.store";
+import { useMobileNavStore } from "@/lib/stores/mobile-nav.store";
 import { notificationsService } from "@/lib/services/notifications.service";
 
 export function Topbar() {
@@ -12,6 +13,7 @@ export function Topbar() {
   const isAdmin = useAuthStore((s) => s.user?.role === "admin");
   const notifCount = useNotificationsStore((s) => s.unreadCount);
   const setUnreadCount = useNotificationsStore((s) => s.setUnreadCount);
+  const openMobileNav = useMobileNavStore((s) => s.open);
 
   useEffect(() => {
     notificationsService
@@ -23,6 +25,14 @@ export function Topbar() {
 
   return (
     <div className="flex items-center gap-3 px-5 lg:px-8 h-16 border-b border-ligne bg-fond/80 backdrop-blur sticky top-0 z-20">
+      <button
+        onClick={openMobileNav}
+        aria-label="Ouvrir le menu"
+        className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg border border-ligne text-txt2 hover:text-txt transition-colors shrink-0"
+      >
+        <Menu size={17} />
+      </button>
+
       <button
         onClick={() => router.push("/app/chercher")}
         className="flex items-center gap-2 text-[13px] text-txt3 bg-sur border border-ligne rounded-lg px-3 py-2 w-full max-w-[360px] hover:border-ligne2 transition-colors"

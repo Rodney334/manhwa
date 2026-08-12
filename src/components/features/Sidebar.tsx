@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { authService } from "@/lib/services/auth.service";
 import { toast } from "@/lib/stores/toast.store";
+import { useMobileNavStore } from "@/lib/stores/mobile-nav.store";
 import {
   CircleDot,
   LayoutGrid,
@@ -21,6 +23,7 @@ import {
   UserCog,
   CalendarDays,
   Sparkles,
+  X,
 } from "lucide-react";
 
 const LIRE = [
@@ -51,15 +54,18 @@ function NavLink({
   label,
   Icon,
   active,
+  onClick,
 }: {
   href: string;
   label: string;
   Icon: React.ElementType;
   active: boolean;
+  onClick?: () => void;
 }) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] transition-colors ${active
           ? "bg-vert-t text-vert font-medium"
@@ -72,7 +78,9 @@ function NavLink({
   );
 }
 
-export function Sidebar() {
+// Contenu partagé entre la sidebar fixe (desktop) et le tiroir (mobile) —
+// une seule source pour la liste de liens, deux façons de l'habiller.
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -87,6 +95,7 @@ export function Sidebar() {
     } finally {
       logout();
       toast.info("Déconnecté.");
+      onNavigate?.();
       router.replace("/login");
     }
   }
@@ -94,8 +103,12 @@ export function Sidebar() {
   const initial = user?.username?.[0]?.toUpperCase() ?? "?";
 
   return (
-    <aside className="hidden lg:flex flex-col w-[248px] shrink-0 border-r border-ligne bg-sur/60 px-3 py-5 gap-6 h-screen sticky top-0 overflow-y-auto">
-      <Link href="/app" className="flex items-center gap-2.5 px-2 font-display text-[17px] tracking-tight">
+    <>
+      <Link
+        href="/app"
+        onClick={onNavigate}
+        className="flex items-center gap-2.5 px-2 font-display text-[17px] tracking-tight"
+      >
         <i className="w-2 h-2 rounded-full bg-vert pastille-vive" />
         <b className="font-normal">
           Manhwa<span className="text-vert">List</span>
@@ -114,6 +127,7 @@ export function Sidebar() {
               label={item.label}
               Icon={item.icon}
               active={pathname === item.href}
+              onClick={onNavigate}
             />
           ))}
         </div>
@@ -129,6 +143,7 @@ export function Sidebar() {
               label={item.label}
               Icon={item.icon}
               active={pathname === item.href}
+              onClick={onNavigate}
             />
           ))}
         </div>
@@ -145,6 +160,7 @@ export function Sidebar() {
                 label={item.label}
                 Icon={item.icon}
                 active={pathname === item.href}
+                onClick={onNavigate}
               />
             ))}
           </div>
@@ -152,7 +168,11 @@ export function Sidebar() {
       </nav>
 
       <div className="flex items-center gap-2.5 px-2 pt-4 border-t border-ligne">
-        <Link href="/app/profil" className="flex items-center gap-2.5 min-w-0 flex-1 group">
+        <Link
+          href="/app/profil"
+          onClick={onNavigate}
+          className="flex items-center gap-2.5 min-w-0 flex-1 group"
+        >
           <div className="w-8 h-8 rounded-full bg-vert-t text-vert flex items-center justify-center font-semibold text-[13px] shrink-0">
             {initial}
           </div>
@@ -173,6 +193,54 @@ export function Sidebar() {
           <LogOut size={15} />
         </button>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export function Sidebar() {
+  const isOpen = useMobileNavStore((s) => s.isOpen);
+  const close = useMobileNavStore((s) => s.close);
+  const pathname = usePathname();
+
+  // Filet de sécurité : si la navigation se produit autrement que via un
+  // clic sur un lien du tiroir (bouton précédent du navigateur, par
+  // exemple), le tiroir doit quand même se refermer.
+  useEffect(() => {
+    close();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  return (
+    <>
+      {/* Desktop : colonne fixe, toujours visible à partir de lg. */}
+      <aside className="hidden lg:flex flex-col w-[248px] shrink-0 border-r border-ligne bg-sur/60 px-3 py-5 gap-6 h-screen sticky top-0 overflow-y-auto">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile : tiroir superposé, ouvert via le bouton hamburger de la
+          Topbar (état partagé par mobile-nav.store). En dessous de lg
+          uniquement — le double rendu (desktop cache/mobile cache) est
+          volontaire, plus simple que de repositionner un seul arbre au
+          resize. */}
+      {isOpen && (
+        <div className="lg:hidden fixed inset-0 z-40">
+          <button
+            aria-label="Fermer le menu"
+            onClick={close}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <aside className="absolute left-0 top-0 h-full w-[80%] max-w-[300px] flex flex-col bg-sur border-r border-ligne px-3 py-5 gap-6 overflow-y-auto">
+            <button
+              onClick={close}
+              aria-label="Fermer le menu"
+              className="absolute top-4 right-3 text-txt3 hover:text-txt p-1.5"
+            >
+              <X size={18} />
+            </button>
+            <SidebarContent onNavigate={close} />
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

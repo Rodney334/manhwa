@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono, Black_Han_Sans } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
+import { ServiceWorkerRegister } from "@/components/features/ServiceWorkerRegister";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -61,6 +62,7 @@ export default function RootLayout({
       className={`${jakarta.variable} ${jetbrains.variable} ${blackHan.variable} antialiased`}
     >
       <body>
+        <ServiceWorkerRegister />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
