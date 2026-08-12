@@ -2,9 +2,18 @@ import { ApiErrorBody } from "@/types";
 
 // ─── Base URL ──────────────────────────────────────────────────────────────
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ??
-  "https://manhwa-list-beta-production.up.railway.app";
+// Pas de fallback vers une URL codée en dur : un ancien déploiement "beta"
+// oublié dans le code a déjà fait pointer une build en production vers un
+// mauvais backend, silencieusement, sans qu'aucune erreur ne le signale.
+// Mieux vaut un échec bruyant au build que des données d'un autre backend
+// servies sans avertissement.
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  throw new Error(
+    "NEXT_PUBLIC_API_URL n'est pas définie. Ajoute-la dans les variables d'environnement du projet (Vercel : Settings → Environment Variables).",
+  );
+}
+
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ─── Erreur API ────────────────────────────────────────────────────────────
 
@@ -208,11 +217,30 @@ export const api = {
 };
 
 /** Construit l'URL absolue d'une couverture servie par le backend (/covers/...). */
+// Domaines dont il est documenté qu'ils bloquent le hotlinking — servent
+// délibérément une image de substitution à toute requête sans `Referer`
+// légitime (cf. cover-storage.service.ts, backend). Un <img> de navigateur
+// envoie toujours le `Referer` du site qui l'affiche, jamais celui de la
+// source d'origine : il ne peut donc JAMAIS contourner ce blocage, quel que
+// soit le code écrit ici. Autant ne pas essayer plutôt que d'afficher une
+// image trompeuse en attendant que le backend l'ait rapatriée lui-même.
+const HOTLINK_BLOCKED_HOSTS = ["uploads.mangadex.org"];
+
 export function coverUrl(manhwa: { coverPath?: string; coverSourceUrl?: string }): string | null {
   if (manhwa.coverPath) {
     return manhwa.coverPath.startsWith("http")
       ? manhwa.coverPath
       : `${API_BASE_URL}${manhwa.coverPath.startsWith("/") ? "" : "/"}${manhwa.coverPath}`;
   }
-  return manhwa.coverSourceUrl ?? null;
+
+  if (manhwa.coverSourceUrl) {
+    try {
+      const host = new URL(manhwa.coverSourceUrl).hostname;
+      if (!HOTLINK_BLOCKED_HOSTS.includes(host)) return manhwa.coverSourceUrl;
+    } catch {
+      return manhwa.coverSourceUrl;
+    }
+  }
+
+  return null;
 }
