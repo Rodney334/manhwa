@@ -4,6 +4,10 @@ import type { Manhwa, PaginatedResponse } from "@/types";
 // NOTE : create / import / update renvoient { message, manhwa } côté backend,
 // pas la fiche directement — on désenveloppe ici.
 
+export type DropOffStats =
+  | { available: false; sampleSize: number }
+  | { available: true; sampleSize: number; p25: number; median: number; p75: number };
+
 export const manhwaService = {
   search(params: { q?: string; page?: number; pageSize?: number }) {
     return api.get<PaginatedResponse<Manhwa>>("/api/v1/manhwa/search", { params });
@@ -51,5 +55,11 @@ export const manhwaService = {
       `/api/v1/manhwa/${id}/aliases`,
       { aliases },
     );
+  },
+
+  // Route publique : la statistique porte sur l'ensemble des utilisateurs,
+  // pas sur qui que ce soit en particulier.
+  dropOffStats(id: string) {
+    return api.get<DropOffStats>(`/api/v1/manhwa/${id}/drop-off-stats`, { skipAuth: true });
   },
 };

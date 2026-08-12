@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { manhwaService } from "@/lib/services/manhwa.service";
+import { manhwaService, type DropOffStats } from "@/lib/services/manhwa.service";
 import { libraryService } from "@/lib/services/library.service";
 import { Cover } from "@/components/features/Cover";
 import { Spinner } from "@/components/ui/Primitives";
@@ -16,7 +16,7 @@ import { toast } from "@/lib/stores/toast.store";
 import { ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import type { Manhwa, LibraryEntry, ReadingStatus } from "@/types";
-import { ArrowLeft, Plus, Minus, Heart, ExternalLink, Trash2, Tag, Star } from "lucide-react";
+import { ArrowLeft, Plus, Minus, Heart, ExternalLink, Trash2, Tag, Star, TrendingDown, ShieldCheck } from "lucide-react";
 
 const STATUS_OPTIONS: ReadingStatus[] = [
   "plan_to_read",
@@ -35,6 +35,7 @@ export default function FichePage() {
   const [chapterInput, setChapterInput] = useState("");
   const [notesInput, setNotesInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [dropOff, setDropOff] = useState<DropOffStats | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +60,17 @@ export default function FichePage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Indépendant du reste : un échec ici ne doit jamais empêcher le reste de
+  // la fiche de s'afficher, c'est une statistique en plus, pas une donnée
+  // essentielle au fonctionnement de la page.
+  useEffect(() => {
+    if (!manhwa?._id) return;
+    manhwaService
+      .dropOffStats(manhwa._id)
+      .then(setDropOff)
+      .catch(() => {});
+  }, [manhwa?._id]);
 
   async function handleAdd() {
     if (!manhwa) return;
@@ -254,6 +266,10 @@ export default function FichePage() {
                 </a>
               ))}
             </div>
+          )}
+
+          {dropOff?.available && (
+            <DropOffBanner stats={dropOff} currentChapter={entry?.currentChapter} />
           )}
         </div>
       </div>
@@ -475,6 +491,59 @@ function AliasesPanel({
       <p className="text-[11px] text-txt3">
         Sépare plusieurs titres par des virgules. Un import ultérieur portant l&apos;un de ces titres sera rattaché à cette fiche au lieu d&apos;en créer une nouvelle.
       </p>
+    </div>
+  );
+}
+
+// ─── Mur de l'abandon ───────────────────────────────────────────────────────
+
+function DropOffBanner({
+  stats,
+  currentChapter,
+}: {
+  stats: Extract<DropOffStats, { available: true }>;
+  currentChapter?: number;
+}) {
+  // Personnalisé seulement si le lecteur a une progression connue sur cette
+  // fiche — sinon, la statistique reste un fait sur la communauté, pas une
+  // comparaison le concernant.
+  const passedDangerZone = currentChapter !== undefined && currentChapter >= stats.p75;
+  const passedMedian = currentChapter !== undefined && currentChapter >= stats.median;
+
+  return (
+    <div
+      className={`flex items-start gap-2.5 rounded-lg border px-3.5 py-3 mt-1 ${
+        passedDangerZone
+          ? "border-vert/25 bg-vert-t"
+          : "border-ligne bg-sur2/60"
+      }`}
+    >
+      {passedDangerZone ? (
+        <ShieldCheck size={15} className="text-vert shrink-0 mt-0.5" />
+      ) : (
+        <TrendingDown size={15} className="text-txt3 shrink-0 mt-0.5" />
+      )}
+      <div className="flex flex-col gap-0.5">
+        {passedDangerZone ? (
+          <p className="text-[12.5px] text-txt2">
+            Tu as dépassé le point où <b className="text-vert">75%</b> des abandons ont lieu sur
+            cette série — tu es (quasi) tiré d&apos;affaire.
+          </p>
+        ) : passedMedian ? (
+          <p className="text-[12.5px] text-txt2">
+            Tu as dépassé la moitié des abandons — le plus dur est probablement passé.
+          </p>
+        ) : (
+          <p className="text-[12.5px] text-txt2">
+            <b className="text-txt">75%</b> des abandons sur cette série ont lieu avant le
+            chapitre <b className="text-txt">{stats.p75}</b>.
+          </p>
+        )}
+        <p className="text-[10.5px] text-txt3">
+          D&apos;après {stats.sampleSize} lecteur{stats.sampleSize > 1 ? "s" : ""} ayant abandonné
+          cette série.
+        </p>
+      </div>
     </div>
   );
 }
