@@ -88,10 +88,23 @@ export default function FichePage() {
     }
   }
 
+  // `POST /increment` n'accepte que des valeurs positives (c'est son rôle :
+  // le geste rapide "+1", jamais une correction en arrière) — le backend le
+  // refuse en 422 si on lui envoie un pas négatif. Pour reculer (corriger
+  // une erreur de saisie), c'est `PATCH /progress` qu'il faut appeler, avec
+  // la valeur absolue résultante plutôt qu'un delta.
   async function handleIncrement(step: number) {
     if (!entry) return;
     try {
-      const updated = await libraryService.increment(entry._id, step);
+      if (step > 0) {
+        const updated = await libraryService.increment(entry._id, step);
+        setEntry(updated);
+        setChapterInput(String(updated.currentChapter ?? 0));
+        return;
+      }
+
+      const nextChapter = Math.max(0, (entry.currentChapter ?? 0) + step);
+      const updated = await libraryService.updateProgress(entry._id, nextChapter);
       setEntry(updated);
       setChapterInput(String(updated.currentChapter ?? 0));
     } catch {
