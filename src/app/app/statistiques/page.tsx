@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { libraryService } from "@/lib/services/library.service";
+import { libraryService, type HeatmapDay } from "@/lib/services/library.service";
 import { Spinner, EmptyState } from "@/components/ui/Primitives";
 import { READING_STATUS_LABELS } from "@/lib/utils/format";
 import { toast } from "@/lib/stores/toast.store";
@@ -24,6 +24,7 @@ const MOIS_COURT = [
 export default function StatistiquesPage() {
   const [stats, setStats] = useState<LibraryStats | null>(null);
   const [error, setError] = useState(false);
+  const [heatmap, setHeatmap] = useState<HeatmapDay[] | null>(null);
 
   useEffect(() => {
     libraryService
@@ -33,6 +34,12 @@ export default function StatistiquesPage() {
         toast.error("Impossible de charger les statistiques.");
         setError(true);
       });
+    // Indépendant du reste : un échec ici ne doit pas priver la page du
+    // reste des statistiques, donc pas de toast, juste une section absente.
+    libraryService
+      .readingHeatmap(365)
+      .then(setHeatmap)
+      .catch(() => setHeatmap([]));
   }, []);
 
   if (error) {
@@ -140,6 +147,8 @@ export default function StatistiquesPage() {
             </div>
           )}
 
+          {heatmap && heatmap.length > 0 && <ReadingHeatmap days={heatmap} />}
+
           {topGenres.length > 0 && (
             <div className="flex flex-col gap-3">
               <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">
@@ -172,6 +181,67 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
     <div className="rounded-xl border border-ligne bg-sur/60 px-4 py-3.5">
       <div className="text-[22px] font-mono font-medium text-vert">{value}</div>
       <div className="text-[11.5px] text-txt3 mt-0.5">{label}</div>
+    </div>
+  );
+}
+
+// Grille façon "contributions" — une colonne par semaine, 7 lignes
+// (dimanche en haut). L'intensité de vert reflète le nombre de chapitres
+// lus ce jour-là, relatif au jour le plus actif de la période affichée.
+function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
+  const byDate = new Map(days.map((d) => [d.date, d.chaptersRead]));
+  const max = Math.max(1, ...days.map((d) => d.chaptersRead));
+
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - 364);
+  // Recule jusqu'au dimanche précédent pour que chaque colonne représente
+  // une semaine complète et alignée, comme sur GitHub.
+  start.setDate(start.getDate() - start.getDay());
+
+  const weeks: Date[][] = [];
+  const cursor = new Date(start);
+  while (cursor <= today) {
+    const week: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      week.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    weeks.push(week);
+  }
+
+  function intensity(count: number): string {
+    if (count === 0) return "bg-sur2";
+    const ratio = count / max;
+    if (ratio > 0.75) return "bg-vert";
+    if (ratio > 0.45) return "bg-vert/70";
+    if (ratio > 0.15) return "bg-vert/45";
+    return "bg-vert/25";
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">
+        Régularité (12 derniers mois)
+      </h2>
+      <div className="flex gap-[3px] overflow-x-auto pb-1">
+        {weeks.map((week, wi) => (
+          <div key={wi} className="flex flex-col gap-[3px]">
+            {week.map((date, di) => {
+              const key = date.toISOString().slice(0, 10);
+              const count = byDate.get(key) ?? 0;
+              const inRange = date <= today;
+              return (
+                <div
+                  key={di}
+                  title={inRange ? `${key} — ${count} chapitre${count > 1 ? "s" : ""}` : undefined}
+                  className={`w-[11px] h-[11px] rounded-[2px] ${inRange ? intensity(count) : "bg-transparent"}`}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

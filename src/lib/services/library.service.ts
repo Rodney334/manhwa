@@ -1,5 +1,17 @@
 import { api } from "@/lib/api/client";
-import type { LibraryEntry, LibraryStats, PaginatedResponse, ReadingStatus } from "@/types";
+import type { LibraryEntry, LibraryStats, Manhwa, PaginatedResponse, ReadingStatus } from "@/types";
+
+export interface ReleaseCalendarEntry {
+  manhwa: Pick<Manhwa, "_id" | "title" | "slug" | "coverPath" | "coverSourceUrl">;
+  typicalDay: number; // 0 = dimanche … 6 = samedi
+  lastReleasedAt: string;
+  isLikelyOnHiatus: boolean;
+}
+
+export interface HeatmapDay {
+  date: string; // "YYYY-MM-DD"
+  chaptersRead: number;
+}
 
 // NOTE : le backend n'a pas un contrat de réponse uniforme.
 // - list / getOne / stats / history → renvoient l'objet brut.
@@ -72,5 +84,24 @@ export const libraryService = {
 
   remove(id: string) {
     return api.delete<{ message: string }>(`/api/v1/library/${id}`);
+  },
+
+  async releaseCalendar() {
+    const res = await api.get<{ items: ReleaseCalendarEntry[] }>("/api/v1/library/release-calendar");
+    return res.items;
+  },
+
+  async readingHeatmap(days = 365) {
+    const res = await api.get<{ items: HeatmapDay[] }>("/api/v1/library/reading-heatmap", {
+      params: { days },
+    });
+    return res.items;
+  },
+
+  async recommendations(limit = 12) {
+    const res = await api.get<{ items: Manhwa[] }>("/api/v1/library/recommendations", {
+      params: { limit },
+    });
+    return res.items;
   },
 };

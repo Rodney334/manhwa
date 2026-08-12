@@ -19,12 +19,16 @@ import {
   LayoutDashboard,
   LogOut,
   UserCog,
+  CalendarDays,
+  Sparkles,
 } from "lucide-react";
 
 const LIRE = [
   { href: "/app", label: "Reprendre", icon: CircleDot },
   { href: "/app/bibliotheque", label: "Bibliothèque", icon: LayoutGrid },
   { href: "/app/chercher", label: "Chercher", icon: Search },
+  { href: "/app/calendrier", label: "Calendrier", icon: CalendarDays },
+  { href: "/app/decouvrir", label: "Découvrir", icon: Sparkles },
   { href: "/app/statistiques", label: "Statistiques", icon: BarChart3 },
 ];
 
