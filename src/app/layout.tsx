@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono, Black_Han_Sans } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
@@ -31,6 +31,25 @@ export const metadata: Metadata = {
   },
   description:
     "Suivez votre progression sur tous vos manhwas, manwhas et webtoons en cours. Une seule bibliothèque, jamais deux fois le même chapitre.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "ManhwaList",
+  },
+};
+
+// Next.js exige `themeColor` dans `viewport`, pas dans `metadata` — sinon
+// un warning de dépréciation apparaît au build.
+export const viewport: Viewport = {
+  themeColor: "#0a0b0d",
 };
 
 export default function RootLayout({
