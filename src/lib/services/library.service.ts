@@ -13,6 +13,41 @@ export interface HeatmapDay {
   chaptersRead: number;
 }
 
+export interface LibraryComparisonEntry {
+  slug: string;
+  title: string;
+  coverPath?: string;
+  coverSourceUrl?: string;
+  mine: { status: ReadingStatus; currentChapter?: number };
+  theirs: { status: ReadingStatus; currentChapter?: number };
+}
+
+export interface LibraryComparison {
+  owner: { username: string; avatarUrl?: string };
+  counts: { mine: number; theirs: number; common: number };
+  common: LibraryComparisonEntry[];
+}
+
+export interface ReadingWrapped {
+  period: "month" | "year";
+  from: string;
+  to: string;
+  totalChaptersRead: number;
+  distinctSeriesCount: number;
+  activeDaysCount: number;
+  mostReadManhwa: {
+    _id: string;
+    title: string;
+    slug: string;
+    coverPath?: string;
+    coverSourceUrl?: string;
+    chaptersRead: number;
+  } | null;
+  mostActiveDay: number | null; // 0 = dimanche … 6 = samedi
+  topGenre: string | null;
+  currentStreak: number;
+}
+
 // NOTE : le backend n'a pas un contrat de réponse uniforme.
 // - list / getOne / stats / history → renvoient l'objet brut.
 // - add / update / setProgress / increment → renvoient { message, entry }.
@@ -103,5 +138,17 @@ export const libraryService = {
       params: { limit },
     });
     return res.items;
+  },
+
+  // `token` peut venir d'un lien collé tel quel (…/partage/<token>) ou du
+  // token nu — extrait ici pour éviter de faire porter cette logique au
+  // composant appelant.
+  compare(tokenOrLink: string) {
+    const token = tokenOrLink.trim().split("/").filter(Boolean).pop() ?? tokenOrLink.trim();
+    return api.get<LibraryComparison>(`/api/v1/library/compare/${encodeURIComponent(token)}`);
+  },
+
+  wrapped(period: "month" | "year" = "month") {
+    return api.get<ReadingWrapped>("/api/v1/library/wrapped", { params: { period } });
   },
 };

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { libraryService, type HeatmapDay } from "@/lib/services/library.service";
+import { ReadingWrappedCard } from "@/components/features/ReadingWrappedCard";
 import { Spinner, EmptyState } from "@/components/ui/Primitives";
 import { READING_STATUS_LABELS } from "@/lib/utils/format";
 import { toast } from "@/lib/stores/toast.store";
@@ -148,6 +149,8 @@ export default function StatistiquesPage() {
           )}
 
           {heatmap && heatmap.length > 0 && <ReadingHeatmap days={heatmap} />}
+
+          <ReadingWrappedCard />
 
           {topGenres.length > 0 && (
             <div className="flex flex-col gap-3">

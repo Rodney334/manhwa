@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { sharesService, type CreateSharePayload, type ExportPdfOptions } from "@/lib/services/shares.service";
+import { libraryService, type LibraryComparison } from "@/lib/services/library.service";
+import { Cover } from "@/components/features/Cover";
 import { EmptyState, Spinner } from "@/components/ui/Primitives";
-import { READING_STATUS_LABELS, formatDate, cn } from "@/lib/utils/format";
+import { READING_STATUS_LABELS, formatDate, formatChapter, cn } from "@/lib/utils/format";
 import { toast } from "@/lib/stores/toast.store";
+import { ApiError } from "@/lib/api/client";
 import type { ReadingStatus, Share } from "@/types";
-import { Share2, Copy, Trash2, Plus, Eye, EyeOff, Download, X } from "lucide-react";
+import { Share2, Copy, Trash2, Plus, Eye, EyeOff, Download, X, Users, Loader2 } from "lucide-react";
 
 const ALL_STATUSES: ReadingStatus[] = [
   "reading",
@@ -41,6 +44,9 @@ export default function PartagePage() {
   const [showForm, setShowForm] = useState(false);
   const [showExportOptions, setShowExportOptions] = useState(false);
   const [exportOptions, setExportOptions] = useState<ExportPdfOptions>(EMPTY_EXPORT);
+  const [compareInput, setCompareInput] = useState("");
+  const [comparing, setComparing] = useState(false);
+  const [comparison, setComparison] = useState<LibraryComparison | null>(null);
 
   async function load() {
     try {
@@ -118,6 +124,24 @@ export default function PartagePage() {
     toast.success("Lien copié.");
   }
 
+  async function handleCompare() {
+    if (!compareInput.trim()) return;
+    setComparing(true);
+    setComparison(null);
+    try {
+      const result = await libraryService.compare(compareInput);
+      setComparison(result);
+    } catch (e) {
+      toast.error(
+        e instanceof ApiError
+          ? e.message
+          : "Lien introuvable, révoqué ou expiré.",
+      );
+    } finally {
+      setComparing(false);
+    }
+  }
+
   async function handleExportPdf() {
     setExporting(true);
     try {
@@ -151,6 +175,73 @@ export default function PartagePage() {
         >
           <Download size={13} /> Export PDF
         </button>
+      </div>
+
+      <div className="flex flex-col gap-4 rounded-xl border border-ligne bg-sur/60 p-4">
+        <div className="flex items-center gap-2">
+          <Users size={15} className="text-txt3" />
+          <span className="text-[13px] font-medium">Comparer avec quelqu&apos;un</span>
+        </div>
+        <p className="text-[12px] text-txt3 -mt-2">
+          Colle le lien de partage d&apos;un ami pour voir les séries que vous avez en commun.
+        </p>
+        <div className="flex gap-2">
+          <input
+            value={compareInput}
+            onChange={(e) => setCompareInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleCompare()}
+            placeholder="https://manhwalist.../partage/…"
+            className="flex-1 bg-sur border border-ligne rounded-lg px-3.5 py-2.5 text-[13px] outline-none focus:border-vert/50 transition-colors"
+          />
+          <button
+            onClick={handleCompare}
+            disabled={comparing || !compareInput.trim()}
+            className="flex items-center gap-1.5 bg-vert text-[#05130c] font-medium text-[13px] rounded-lg px-4 py-2.5 hover:brightness-110 transition-all disabled:opacity-60 shrink-0"
+          >
+            {comparing && <Loader2 size={13} className="animate-spin" />}
+            Comparer
+          </button>
+        </div>
+
+        {comparison && (
+          <div className="flex flex-col gap-3 pt-2 border-t border-ligne">
+            <p className="text-[12.5px] text-txt2">
+              Toi et <b className="text-txt">{comparison.owner.username}</b> avez{" "}
+              <b className="text-vert">{comparison.counts.common}</b> série
+              {comparison.counts.common > 1 ? "s" : ""} en commun
+              {comparison.counts.common > 0
+                ? ` sur ${comparison.counts.mine} et ${comparison.counts.theirs} au total.`
+                : "."}
+            </p>
+
+            {comparison.common.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                {comparison.common.map((entry) => (
+                  <div
+                    key={entry.slug}
+                    className="flex items-center gap-3 rounded-lg border border-ligne bg-sur2/60 px-3 py-2"
+                  >
+                    <Cover manhwa={entry} className="w-8 h-11 rounded shrink-0" />
+                    <span className="flex-1 min-w-0 text-[12.5px] font-medium truncate">
+                      {entry.title}
+                    </span>
+                    <span className="text-[11px] text-txt3 font-mono w-24 text-right">
+                      toi : {entry.mine.currentChapter !== undefined
+                        ? `ch. ${formatChapter(entry.mine.currentChapter)}`
+                        : READING_STATUS_LABELS[entry.mine.status]}
+                    </span>
+                    <span className="text-[11px] text-txt3 font-mono w-24 text-right">
+                      {comparison.owner.username} :{" "}
+                      {entry.theirs.currentChapter !== undefined
+                        ? `ch. ${formatChapter(entry.theirs.currentChapter)}`
+                        : READING_STATUS_LABELS[entry.theirs.status]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {showExportOptions && (
