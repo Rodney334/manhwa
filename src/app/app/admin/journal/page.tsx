@@ -44,10 +44,7 @@ export default function JournalPage() {
               key={log._id ?? i}
               className="flex items-center gap-3 py-2.5 border-b border-ligne text-[13px]"
             >
-              <span
-                className="font-mono text-[11.5px] text-txt3 w-24 shrink-0"
-                suppressHydrationWarning
-              >
+              <span className="font-mono text-[11.5px] text-txt3 w-24 shrink-0">
                 {formatRelative(log.createdAt)}
               </span>
               <span className="font-mono text-vert text-[12px]">{log.action}</span>

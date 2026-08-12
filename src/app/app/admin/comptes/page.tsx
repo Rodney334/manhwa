@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { adminService } from "@/lib/services/admin.service";
 import { EmptyState, Spinner, StatusBadge } from "@/components/ui/Primitives";
 import { toast } from "@/lib/stores/toast.store";
@@ -115,12 +114,7 @@ export default function ComptesPage() {
               {users.map((u) => (
                 <tr key={u._id} className="border-t border-ligne">
                   <td className="px-2 py-2.5">
-                    <Link
-                      href={`/app/admin/comptes/${u._id}`}
-                      className="font-medium hover:text-vert transition-colors"
-                    >
-                      {u.username}
-                    </Link>
+                    <div className="font-medium">{u.username}</div>
                     <div className="text-txt3 text-[11.5px]">{u.email}</div>
                   </td>
                   <td className="px-2 py-2.5">

@@ -86,10 +86,7 @@ export default function TachesPage() {
                 key={`${run.name}-${run.startedAt}-${i}`}
                 className="flex items-center gap-3 py-2.5 border-b border-ligne text-[13px]"
               >
-                <span
-                  className="font-mono text-[11.5px] text-txt3 w-24 shrink-0"
-                  suppressHydrationWarning
-                >
+                <span className="font-mono text-[11.5px] text-txt3 w-24 shrink-0">
                   {formatRelative(run.startedAt)}
                 </span>
                 <span className="font-mono text-vert text-[12px]">{run.name}</span>

@@ -114,7 +114,7 @@ export default function ModerationPage() {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-[13.5px] font-medium truncate">{s.title}</p>
-                    <p className="text-[11.5px] text-txt3 font-mono mt-0.5" suppressHydrationWarning>
+                    <p className="text-[11.5px] text-txt3 font-mono mt-0.5">
                       {s.submittedBy?.username ?? "inconnu"} · {formatRelative(s.createdAt)}
                     </p>
                   </div>
