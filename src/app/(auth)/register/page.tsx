@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { authService } from "@/lib/services/auth.service";
 import { tokenManager, ApiError } from "@/lib/api/client";
@@ -9,8 +9,23 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { toast } from "@/lib/stores/toast.store";
 import { Loader2 } from "lucide-react";
 
+function safeRedirect(raw: string | null): string {
+  if (raw && raw.startsWith("/") && !raw.startsWith("//")) return raw;
+  return "/app";
+}
+
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = safeRedirect(searchParams.get("redirect"));
   const setUser = useAuthStore((s) => s.setUser);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -32,7 +47,7 @@ export default function RegisterPage() {
       tokenManager.setTokens(accessToken, refreshToken);
       setUser(user);
       toast.success("Bienvenue sur ManhwaList.");
-      router.push("/app");
+      router.push(redirectTo);
     } catch (e) {
       if (e instanceof ApiError) {
         setError(e.message);
@@ -107,7 +122,10 @@ export default function RegisterPage() {
 
       <p className="text-center text-[13px] text-txt3">
         Déjà un compte ?{" "}
-        <Link href="/login" className="text-vert hover:underline">
+        <Link
+          href={`/login${redirectTo !== "/app" ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
+          className="text-vert hover:underline"
+        >
           Connecte-toi
         </Link>
       </p>

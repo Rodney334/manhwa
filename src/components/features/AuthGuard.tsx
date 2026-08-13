@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { tokenManager, refreshAccessToken } from "@/lib/api/client";
 import { authService } from "@/lib/services/auth.service";
@@ -25,6 +25,7 @@ type CheckState = "pending" | "ok" | "redirecting";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const setUser = useAuthStore((s) => s.setUser);
   const logout = useAuthStore((s) => s.logout);
   const [checkState, setCheckState] = useState<CheckState>("pending");
@@ -36,13 +37,24 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
     useAuthStore.persist.rehydrate();
 
+    // La page qu'on protège redevient la destination après connexion —
+    // sans ça, quelqu'un dont la session expire sur une fiche précise (ou
+    // qui arrive directement dessus sans être connecté) atterrit sur le
+    // tableau de bord générique après s'être reconnecté, pas là où il
+    // voulait aller. `/app` seul n'a pas besoin d'être répété comme
+    // destination, c'est déjà la destination par défaut du login.
+    const loginUrl =
+      pathname && pathname !== "/app"
+        ? `/login?redirect=${encodeURIComponent(pathname)}`
+        : "/login";
+
     async function checkSession() {
       const accessToken = tokenManager.getAccess();
       const refreshToken = tokenManager.getRefresh();
 
       if (!accessToken && !refreshToken) {
         setCheckState("redirecting");
-        router.replace("/login");
+        router.replace(loginUrl);
         return;
       }
 
@@ -53,7 +65,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         if (!newToken) {
           logout();
           setCheckState("redirecting");
-          router.replace("/login");
+          router.replace(loginUrl);
           return;
         }
       }
@@ -65,7 +77,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       } catch {
         logout();
         setCheckState("redirecting");
-        router.replace("/login");
+        router.replace(loginUrl);
       }
     }
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { authService } from "@/lib/services/auth.service";
 import { tokenManager, ApiError } from "@/lib/api/client";
@@ -9,8 +9,27 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { toast } from "@/lib/stores/toast.store";
 import { Loader2 } from "lucide-react";
 
+// Sécurité minimale : n'accepter qu'un chemin interne (commence par `/`,
+// jamais par `//` qui serait interprété comme une URL absolue par le
+// navigateur) — sinon `redirect` deviendrait une façon d'envoyer quelqu'un
+// qui vient de se connecter vers un site tiers.
+function safeRedirect(raw: string | null): string {
+  if (raw && raw.startsWith("/") && !raw.startsWith("//")) return raw;
+  return "/app";
+}
+
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = safeRedirect(searchParams.get("redirect"));
   const setUser = useAuthStore((s) => s.setUser);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +48,7 @@ export default function LoginPage() {
       tokenManager.setTokens(accessToken, refreshToken);
       setUser(user);
       toast.success(`Content de te revoir, ${user.username}.`);
-      router.push("/app");
+      router.push(redirectTo);
     } catch (e) {
       if (e instanceof ApiError) {
         setError(e.message);
@@ -87,7 +106,10 @@ export default function LoginPage() {
 
       <p className="text-center text-[13px] text-txt3">
         Pas encore de compte ?{" "}
-        <Link href="/register" className="text-vert hover:underline">
+        <Link
+          href={`/register${redirectTo !== "/app" ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
+          className="text-vert hover:underline"
+        >
           Inscris-toi
         </Link>
       </p>

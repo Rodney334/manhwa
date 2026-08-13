@@ -7,7 +7,7 @@ import { sharesService, type SharedList } from "@/lib/services/shares.service";
 import { Spinner } from "@/components/ui/Primitives";
 import { READING_STATUS_LABELS, PUBLICATION_STATUS_LABELS, formatChapter } from "@/lib/utils/format";
 import { coverUrl, ApiError } from "@/lib/api/client";
-import { Download, Heart, Star, Lock, Ban } from "lucide-react";
+import { Download, Heart, Star, Lock, Ban, ArrowRight } from "lucide-react";
 
 type LoadState = "loading" | "ok" | "not_found" | "auth_required" | "error";
 
@@ -94,7 +94,7 @@ export default function PublicSharePage() {
               Ce lien n&apos;est consultable que par un compte ManhwaList.
             </p>
             <Link
-              href="/login"
+              href={`/login?redirect=${encodeURIComponent(`/partage/${params.token}`)}`}
               className="mt-2 inline-flex items-center gap-2 bg-vert text-[#05130c] text-[13.5px] font-medium rounded-lg px-4 py-2 hover:brightness-110 transition-all"
             >
               Se connecter
@@ -128,6 +128,18 @@ export default function PublicSharePage() {
                 <Download size={13} /> {exporting ? "Génération…" : "PDF"}
               </button>
             </div>
+
+            <Link
+              href="/register"
+              className="flex items-center justify-between gap-3 rounded-xl border border-vert/25 bg-vert-t px-4 py-3 hover:border-vert/50 transition-colors"
+            >
+              <span className="text-[13px] text-txt2">
+                Toi aussi, arrête de perdre le fil sur tes lectures.
+              </span>
+              <span className="flex items-center gap-1 text-[12.5px] font-medium text-vert shrink-0">
+                Créer un compte gratuit <ArrowRight size={13} />
+              </span>
+            </Link>
 
             {data.entries.length === 0 ? (
               <p className="text-center text-[13px] text-txt3 py-16">
