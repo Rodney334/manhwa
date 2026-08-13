@@ -104,10 +104,21 @@ async exportPdf(options: ExportPdfOptions = {}): Promise<Blob> {
   return res.blob();
 },
 
-  // Version PUBLIQUE (aucune auth) : PDF du lien partagé, pour un visiteur
-  // qui n'a pas de compte. À ne pas confondre avec exportPdf() ci-dessus.
+  // Version PUBLIQUE : PDF du lien partagé, pour un visiteur qui n'a pas
+  // forcément de compte — mais qui peut en avoir un si le partage l'exige
+  // (cf. commentaire ci-dessous). À ne pas confondre avec exportPdf()
+  // ci-dessus, réservé au propriétaire de sa propre bibliothèque.
+  // Même cause que `viewPublic` : un `fetch()` brut, sans le moindre
+  // en-tête, ne peut jamais satisfaire un partage qui exige un compte
+  // (`SHARE_REQUIRE_AUTH`) — la route backend applique exactement la même
+  // vérification que la consultation de la liste. Le jeton est donc
+  // attaché ici s'il existe, sans quoi ce PDF échouait en 401 pour tout
+  // partage de ce type, même une fois connecté.
   async exportPublicPdf(token: string): Promise<Blob> {
-    const res = await fetch(`${API_BASE_URL}/api/v1/public/${token}/pdf`);
+    const accessToken = tokenManager.getAccess();
+    const res = await fetch(`${API_BASE_URL}/api/v1/public/${token}/pdf`, {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    });
     if (!res.ok) throw new Error("Échec de l'export PDF public.");
     return res.blob();
   },
