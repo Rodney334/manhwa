@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Bot,
   ShieldAlert,
+  ArrowRight,
 } from "lucide-react";
 
 type Category = "auth" | "manhwa" | "user" | "job";
@@ -49,6 +50,14 @@ const CATEGORY_LABEL: Record<Category, string> = {
   manhwa: "Catalogue",
   user: "Comptes",
   job: "Tâches",
+};
+
+const TARGET_TYPE_LABEL: Record<string, string> = {
+  manhwa: "Fiche",
+  user: "Compte",
+  libraryEntry: "Entrée bibliothèque",
+  share: "Partage",
+  job: "Tâche",
 };
 
 function actionMeta(action: string) {
@@ -257,6 +266,13 @@ function LogRow({
           )}
         </span>
 
+        {log.targetLabel && (
+          <span className="flex items-center gap-1 text-[12px] text-txt3 min-w-0 truncate">
+            <ArrowRight size={11} className="shrink-0" />
+            <span className="text-txt2 truncate">{log.targetLabel}</span>
+          </span>
+        )}
+
         <span
           className="ml-auto shrink-0 text-[11px] font-mono text-txt3"
           suppressHydrationWarning
@@ -308,7 +324,11 @@ function LogRow({
 
           {(log.ip || log.targetId) && (
             <p className="text-[10.5px] text-txt3 font-mono">
-              {log.targetType && log.targetId && `${log.targetType} · ${log.targetId}`}
+              {log.targetType &&
+                log.targetId &&
+                `${TARGET_TYPE_LABEL[log.targetType] ?? log.targetType} · ${
+                  log.targetLabel ?? log.targetId
+                }`}
               {log.ip && ` · ${log.ip}`}
             </p>
           )}

@@ -16,6 +16,7 @@ export interface AuditLog {
   actorRole?: "user" | "admin" | "system";
   targetType?: string;
   targetId?: string;
+  targetLabel?: string;
   reason?: string;
   changes?: { before?: Record<string, unknown>; after?: Record<string, unknown> };
   ip?: string;
