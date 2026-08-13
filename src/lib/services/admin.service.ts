@@ -12,10 +12,27 @@ export interface ModerationSubmission {
 export interface AuditLog {
   _id: string;
   action: string;
-  actor?: { username?: string };
+  actorId?: { _id: string; username?: string; email?: string; role?: Role } | string;
+  actorRole?: "user" | "admin" | "system";
   targetType?: string;
+  targetId?: string;
+  reason?: string;
+  changes?: { before?: Record<string, unknown>; after?: Record<string, unknown> };
+  ip?: string;
+  userAgent?: string;
   createdAt: string;
-  [key: string]: unknown;
+}
+
+export interface AuditLogQuery {
+  actorId?: string;
+  action?: string;
+  targetType?: string;
+  targetId?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  pageSize?: number;
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 export interface JobRun {
@@ -131,7 +148,7 @@ export const adminService = {
     return api.patch<{ message: string }>(`/api/v1/admin/users/${id}/role`, { role });
   },
 
-  auditLogs(params?: { page?: number; pageSize?: number }) {
+  auditLogs(params?: AuditLogQuery) {
     return api.get<PaginatedResponse<AuditLog>>("/api/v1/admin/audit-logs", { params });
   },
   dashboard() {
