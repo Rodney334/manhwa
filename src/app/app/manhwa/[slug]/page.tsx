@@ -42,8 +42,7 @@ export default function FichePage() {
       const m = await manhwaService.getByIdOrSlug(params.slug);
       setManhwa(m);
       try {
-        const lib = await libraryService.list({ search: m.title, pageSize: 20 });
-        const found = lib.items.find((e) => e.manhwaId === m._id) ?? null;
+        const found = await libraryService.findByManhwa(m._id);
         setEntry(found);
         if (found) {
           setChapterInput(String(found.currentChapter ?? 0));

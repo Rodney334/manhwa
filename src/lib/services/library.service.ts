@@ -151,4 +151,15 @@ export const libraryService = {
   wrapped(period: "month" | "year" | "last-month" | "last-year" = "month") {
     return api.get<ReadingWrapped>("/api/v1/library/wrapped", { params: { period } });
   },
+
+  // Vérification directe par manhwaId — bien plus fiable qu'une recherche
+  // texte sur le titre, qui pouvait manquer une entrée pourtant présente
+  // (bibliothèque volumineuse, titre mal indexé) et laisser la fiche
+  // afficher "Ajouter" pour une œuvre déjà dans la bibliothèque.
+  async findByManhwa(manhwaId: string) {
+    const res = await api.get<{ entry: LibraryEntry | null }>(
+      `/api/v1/library/by-manhwa/${manhwaId}`,
+    );
+    return res.entry;
+  },
 };
