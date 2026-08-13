@@ -10,9 +10,11 @@ import { Plus, Heart } from "lucide-react";
 export function ContinueCard({
   entry,
   onIncrement,
+  disabled,
 }: {
   entry: LibraryEntry;
   onIncrement: (id: string) => void;
+  disabled?: boolean;
 }) {
   const total = entry.manhwa.totalChapters ?? 0;
   const pct = total > 0 ? (entry.currentChapter / total) * 100 : entry.currentChapter > 0 ? 60 : 0;
@@ -38,8 +40,9 @@ export function ContinueCard({
       </div>
       <button
         onClick={() => onIncrement(entry._id)}
+        disabled={disabled}
         aria-label="Chapitre suivant"
-        className="self-center shrink-0 w-9 h-9 rounded-lg bg-vert-t text-vert flex items-center justify-center hover:bg-vert hover:text-[#05130c] transition-colors"
+        className="self-center shrink-0 w-9 h-9 rounded-lg bg-vert-t text-vert flex items-center justify-center hover:bg-vert hover:text-[#05130c] transition-colors disabled:opacity-40 disabled:pointer-events-none"
       >
         <Plus size={16} />
       </button>

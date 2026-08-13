@@ -20,9 +20,17 @@ export default function AccueilPage() {
   const [entries, setEntries] = useState<LibraryEntry[] | null>(null);
   const [hasLibraryEntries, setHasLibraryEntries] = useState<boolean | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  // Par entrée, pas un verrou global : plusieurs cartes existent en même
+  // temps sur cette page, désactiver tous les boutons pour l'action d'une
+  // seule serait plus gênant que le problème qu'on évite.
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
 
   async function load() {
     setLoadFailed(false);
+    // Deux appels indépendants : un échec sur l'un ne doit jamais bloquer
+    // l'affichage de l'autre, sinon la page reste vide sans rien à montrer
+    // (ni spinner, ni état vide, ni erreur) — exactement ce qui se produisait
+    // avant ce correctif quand `stats()` échouait seul.
     const [continueResult, statsResult] = await Promise.allSettled([
       libraryService.continueReading(20),
       libraryService.stats(),
@@ -50,12 +58,21 @@ export default function AccueilPage() {
     load();
   }, []);
 
+  // Le backend masque désormais une série de "Reprendre" dès qu'une lecture
+  // vient d'y être enregistrée — même s'il reste du retard — et ne la fait
+  // réapparaître que si un nouveau chapitre paraît ensuite. On retire donc
+  // la carte localement après tout incrément réussi, sans condition.
   async function handleIncrement(id: string) {
+    if (pendingIds.has(id)) return;
+    setPendingIds((prev) => new Set(prev).add(id));
     try {
       await libraryService.increment(id, 1);
       setEntries((prev) => prev?.filter((e) => e._id !== id) ?? prev);
       toast.success("+1 chapitre");
     } catch (e) {
+      // Le backend renvoie volontairement un 400 quand on est déjà au
+      // dernier chapitre connu — ce n'est pas un échec, juste un signal
+      // qu'il n'y a plus rien à lire pour l'instant sur cette série.
       if (e instanceof ApiError && e.status === 400) {
         setEntries((prev) => prev?.filter((entry) => entry._id !== id) ?? prev);
         toast.info("Tu es déjà à jour sur cette série.");
@@ -63,6 +80,12 @@ export default function AccueilPage() {
       }
       toast.error("Échec de la mise à jour.");
       load();
+    } finally {
+      setPendingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   }
 
@@ -72,6 +95,14 @@ export default function AccueilPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
+        {/* Cette page n'a pas de données servies au chargement (tout vient
+            d'un useEffect côté client) : Next.js la prérend statiquement au
+            build. La date figée à ce moment-là diffère alors de la date
+            réelle au moment où le visiteur charge la page, ce qui déclenche
+            une erreur d'hydratation React (#418) sur ce seul nœud de texte.
+            `suppressHydrationWarning` est le correctif recommandé par React
+            pour une valeur dont la différence serveur/client est attendue
+            et sans conséquence. */}
         <p
           className="text-[12px] font-mono text-txt3 uppercase tracking-wider"
           suppressHydrationWarning
@@ -95,7 +126,10 @@ export default function AccueilPage() {
           <p className="text-[13.5px] text-txt3">
             Impossible de charger ta reprise pour l&apos;instant.
           </p>
-          <button onClick={load} className="text-[13px] text-vert hover:underline">
+          <button
+            onClick={load}
+            className="text-[13px] text-vert hover:underline"
+          >
             Réessayer
           </button>
         </div>
@@ -136,7 +170,12 @@ export default function AccueilPage() {
       {entries !== null && entries.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {entries.map((entry) => (
-            <ContinueCard key={entry._id} entry={entry} onIncrement={handleIncrement} />
+            <ContinueCard
+              key={entry._id}
+              entry={entry}
+              onIncrement={handleIncrement}
+              disabled={pendingIds.has(entry._id)}
+            />
           ))}
         </div>
       )}

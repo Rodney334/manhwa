@@ -104,8 +104,18 @@ export default function FichePage() {
   // refuse en 422 si on lui envoie un pas négatif. Pour reculer (corriger
   // une erreur de saisie), c'est `PATCH /progress` qu'il faut appeler, avec
   // la valeur absolue résultante plutôt qu'un delta.
+  // Verrou dédié : sans lui, un double-clic (ou un doigt qui glisse sur
+  // mobile) peut envoyer deux requêtes avant que la première ne soit
+  // traitée. Le chapitre final affiché reste correct dans ce cas (les deux
+  // appels convergent au même endroit), mais l'historique, lui, garde une
+  // entrée de trop — exactement le genre d'écart d'une unité observé sur
+  // le Bilan de lecture. `busy` n'est pas réutilisé ici : il sert déjà à
+  // l'ajout/retrait de la bibliothèque, un état sans rapport.
+  const [chapterBusy, setChapterBusy] = useState(false);
+
   async function handleIncrement(step: number) {
-    if (!entry) return;
+    if (!entry || chapterBusy) return;
+    setChapterBusy(true);
     try {
       if (step > 0) {
         const updated = await libraryService.increment(entry._id, step);
@@ -120,6 +130,8 @@ export default function FichePage() {
       setChapterInput(String(updated.currentChapter ?? 0));
     } catch {
       toast.error("Échec de la mise à jour.");
+    } finally {
+      setChapterBusy(false);
     }
   }
 
@@ -312,7 +324,8 @@ export default function FichePage() {
                 <button
                   onClick={() => handleIncrement(-1)}
                   onMouseDown={(e) => e.preventDefault()}
-                  className="w-7 h-7 flex items-center justify-center rounded-md text-txt2 hover:text-txt hover:bg-sur3 transition-colors"
+                  disabled={chapterBusy}
+                  className="w-7 h-7 flex items-center justify-center rounded-md text-txt2 hover:text-txt hover:bg-sur3 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   aria-label="Chapitre précédent"
                 >
                   <Minus size={14} />
@@ -327,7 +340,8 @@ export default function FichePage() {
                 <button
                   onClick={() => handleIncrement(1)}
                   onMouseDown={(e) => e.preventDefault()}
-                  className="w-7 h-7 flex items-center justify-center rounded-md text-vert hover:bg-vert-t transition-colors"
+                  disabled={chapterBusy}
+                  className="w-7 h-7 flex items-center justify-center rounded-md text-vert hover:bg-vert-t transition-colors disabled:opacity-40 disabled:pointer-events-none"
                   aria-label="Chapitre suivant"
                 >
                   <Plus size={14} />
