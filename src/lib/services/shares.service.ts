@@ -73,8 +73,19 @@ export const sharesService = {
 
   // Version PUBLIQUE (aucune auth) : consultation d'un lien partagé par un
   // visiteur sans compte. Pas d'attente d'authentification, jamais de retry.
+  // Volontairement SANS `skipAuth` : un partage public s'affiche très bien
+  // sans être connecté (`accessToken` est alors `null`, donc `apiRequest`
+  // n'attache simplement pas d'en-tête), mais un partage qui exige un
+  // compte (`auth_required`) a justement besoin que le jeton soit envoyé
+  // quand il existe pour être vérifié côté backend. Avec `skipAuth: true`
+  // ici, ce jeton n'était JAMAIS transmis, même une fois connecté — un
+  // partage de ce type renvoyait alors un 401 indéfiniment, boucle de
+  // reconnexion sans fin à l'appui.
+  // `skipRefresh` reste utile : pas la peine de déclencher tout le cycle
+  // de rafraîchissement de session pour une page potentiellement visitée
+  // sans être connecté.
   viewPublic(token: string) {
-    return api.get<SharedList>(`/api/v1/public/${token}`, { skipAuth: true, skipRefresh: true });
+    return api.get<SharedList>(`/api/v1/public/${token}`, { skipRefresh: true });
   },
 
 async exportPdf(options: ExportPdfOptions = {}): Promise<Blob> {
