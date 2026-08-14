@@ -7,7 +7,6 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { authService } from "@/lib/services/auth.service";
 import { toast } from "@/lib/stores/toast.store";
 import { useMobileNavStore } from "@/lib/stores/mobile-nav.store";
-import { InstallButton } from "@/components/features/InstallButton";
 import {
   CircleDot,
   LayoutGrid,
@@ -198,10 +197,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         >
           <LogOut size={15} />
         </button>
-      </div>
-
-      <div className="px-2">
-        <InstallButton variant="panel" />
       </div>
     </>
   );
