@@ -68,6 +68,13 @@
 
 html {
   scroll-behavior: smooth;
+  /* Sans ceci, le rebond de défilement (overscroll) de Safari iOS — very
+     visible en mode PWA installé — révèle le fond blanc par défaut du
+     <html> sous le <body>, même quand ce dernier a la bonne couleur.
+     Chrome ne montre pas ce souci (d'où le signalement venant
+     spécifiquement d'utilisateurs sur d'autres navigateurs). */
+  background: var(--color-fond);
+  color: var(--color-txt);
 }
 
 body {
