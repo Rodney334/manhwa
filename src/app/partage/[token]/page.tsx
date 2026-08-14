@@ -7,7 +7,7 @@ import { sharesService, type SharedList } from "@/lib/services/shares.service";
 import { Spinner } from "@/components/ui/Primitives";
 import { READING_STATUS_LABELS, PUBLICATION_STATUS_LABELS, formatChapter } from "@/lib/utils/format";
 import { coverUrl, ApiError } from "@/lib/api/client";
-import { Download, Heart, Star, Lock, Ban, ArrowRight } from "lucide-react";
+import { Heart, Star, Lock, Ban, ArrowRight } from "lucide-react";
 
 type LoadState = "loading" | "ok" | "not_found" | "auth_required" | "error";
 
@@ -15,7 +15,6 @@ export default function PublicSharePage() {
   const params = useParams<{ token: string }>();
   const [data, setData] = useState<SharedList | null>(null);
   const [state, setState] = useState<LoadState>("loading");
-  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -40,25 +39,6 @@ export default function PublicSharePage() {
       active = false;
     };
   }, [params.token]);
-
-  async function handleExportPdf() {
-    setExporting(true);
-    try {
-      const blob = await sharesService.exportPublicPdf(params.token);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `manhwalist-${params.token}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      // Le visiteur n'a pas de compte à qui remonter une erreur détaillée ;
-      // un état visuel simple suffit ici plutôt qu'un système de toast.
-      alert("Échec du téléchargement du PDF.");
-    } finally {
-      setExporting(false);
-    }
-  }
 
   return (
     <div className="min-h-screen bg-fond px-5 py-10">
@@ -110,23 +90,14 @@ export default function PublicSharePage() {
 
         {state === "ok" && data && (
           <>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="font-display text-[26px] font-normal">
-                  {data.share.title || `La bibliothèque de ${data.owner.username}`}
-                </h1>
-                <p className="text-[13px] text-txt3 mt-1">
-                  Par {data.owner.username} · {data.counts.total} série
-                  {data.counts.total > 1 ? "s" : ""}
-                </p>
-              </div>
-              <button
-                onClick={handleExportPdf}
-                disabled={exporting}
-                className="flex items-center gap-1.5 text-[12.5px] text-txt3 hover:text-vert border border-ligne rounded-lg px-3 py-2 transition-colors shrink-0 disabled:opacity-60"
-              >
-                <Download size={13} /> {exporting ? "Génération…" : "PDF"}
-              </button>
+            <div>
+              <h1 className="font-display text-[26px] font-normal">
+                {data.share.title || `La bibliothèque de ${data.owner.username}`}
+              </h1>
+              <p className="text-[13px] text-txt3 mt-1">
+                Par {data.owner.username} · {data.counts.total} série
+                {data.counts.total > 1 ? "s" : ""}
+              </p>
             </div>
 
             <Link

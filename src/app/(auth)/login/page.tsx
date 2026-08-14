@@ -7,7 +7,7 @@ import { authService } from "@/lib/services/auth.service";
 import { tokenManager, ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { toast } from "@/lib/stores/toast.store";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 // Sécurité minimale : n'accepter qu'un chemin interne (commence par `/`,
 // jamais par `//` qui serait interprété comme une URL absolue par le
@@ -132,18 +132,35 @@ function Field({
   placeholder?: string;
   autoFocus?: boolean;
 }) {
+  const [visible, setVisible] = useState(false);
+  const isPassword = type === "password";
+
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-[12px] text-txt3">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoFocus={autoFocus}
-        required
-        className="bg-sur border border-ligne rounded-lg px-3.5 py-2.5 text-[13.5px] outline-none focus:border-vert/50 transition-colors"
-      />
+      <div className="relative">
+        <input
+          type={isPassword && visible ? "text" : type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+          required
+          className={`w-full bg-sur border border-ligne rounded-lg px-3.5 py-2.5 text-[13.5px] outline-none focus:border-vert/50 transition-colors ${
+            isPassword ? "pr-10" : ""
+          }`}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            className="absolute right-0 top-0 h-full px-3 flex items-center text-txt3 hover:text-txt2 transition-colors"
+          >
+            {visible ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
+        )}
+      </div>
     </label>
   );
 }
