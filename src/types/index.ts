@@ -174,5 +174,6 @@ export interface Share {
 export interface ApiErrorBody {
   message?: string;
   error?: string;
+  errors?: { path?: string; param?: string; msg?: string }[];
   [key: string]: unknown;
 }
