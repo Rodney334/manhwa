@@ -5,9 +5,13 @@ import { adminService, type JobsOverview } from "@/lib/services/admin.service";
 import { EmptyState, Spinner } from "@/components/ui/Primitives";
 import { formatRelative } from "@/lib/utils/format";
 import { toast } from "@/lib/stores/toast.store";
+import { useTranslations } from "@/lib/i18n/useTranslations";
+import { useLocaleStore } from "@/lib/i18n/store";
 import { Cog, Play } from "lucide-react";
 
 export default function TachesPage() {
+  const t = useTranslations("admin").jobs;
+  const locale = useLocaleStore((s) => s.locale);
   const [overview, setOverview] = useState<JobsOverview | null>(null);
   const [running, setRunning] = useState<string | null>(null);
 
@@ -16,23 +20,24 @@ export default function TachesPage() {
       const res = await adminService.jobs();
       setOverview(res);
     } catch {
-      toast.error("Impossible de charger les tâches.");
+      toast.error(t.loadError);
       setOverview({ available: [], history: [] });
     }
   }
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleRun(name: string) {
     setRunning(name);
     try {
       await adminService.runJob(name);
-      toast.success(`Tâche « ${name} » lancée.`);
+      toast.success(t.started.replace("{name}", name));
       setTimeout(load, 1500);
     } catch {
-      toast.error("Échec du lancement.");
+      toast.error(t.startError);
     } finally {
       setRunning(null);
     }
@@ -41,8 +46,8 @@ export default function TachesPage() {
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
       <div>
-        <h1 className="font-display text-[28px] font-normal">Tâches</h1>
-        <p className="text-[13.5px] text-txt3 mt-1">Tâches de synchronisation planifiées côté serveur.</p>
+        <h1 className="font-display text-[28px] font-normal">{t.title}</h1>
+        <p className="text-[13.5px] text-txt3 mt-1">{t.subtitle}</p>
       </div>
 
       {overview === null && (
@@ -52,7 +57,7 @@ export default function TachesPage() {
       )}
 
       {overview !== null && overview.available.length === 0 && (
-        <EmptyState icon={<Cog size={26} />} title="Aucune tâche disponible" />
+        <EmptyState icon={<Cog size={26} />} title={t.emptyTitle} />
       )}
 
       {overview !== null && overview.available.length > 0 && (
@@ -68,7 +73,7 @@ export default function TachesPage() {
                 disabled={running === name}
                 className="flex items-center gap-1.5 text-[12px] font-medium rounded-lg px-3 py-1.5 bg-vert-t text-vert hover:bg-vert hover:text-[#05130c] transition-colors disabled:opacity-60"
               >
-                <Play size={12} /> Lancer
+                <Play size={12} /> {t.run}
               </button>
             </div>
           ))}
@@ -78,7 +83,7 @@ export default function TachesPage() {
       {overview !== null && overview.history.length > 0 && (
         <div className="flex flex-col gap-3">
           <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">
-            Historique des exécutions
+            {t.historyHeading}
           </h2>
           <div className="flex flex-col">
             {overview.history.slice(0, 15).map((run, i) => (
@@ -90,12 +95,16 @@ export default function TachesPage() {
                   className="font-mono text-[11.5px] text-txt3 w-24 shrink-0"
                   suppressHydrationWarning
                 >
-                  {formatRelative(run.startedAt)}
+                  {formatRelative(run.startedAt, locale)}
                 </span>
                 <span className="font-mono text-vert text-[12px]">{run.name}</span>
                 <span className="text-txt3 text-[11.5px] ml-auto">
-                  {run.processed} traités · {run.updated} mis à jour
-                  {run.errors.length > 0 ? ` · ${run.errors.length} erreur(s)` : ""}
+                  {t.historyLine
+                    .replace("{processed}", String(run.processed))
+                    .replace("{updated}", String(run.updated))}
+                  {run.errors.length > 0
+                    ? t.errorsSuffix.replace("{n}", String(run.errors.length))
+                    : ""}
                 </span>
               </div>
             ))}

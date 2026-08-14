@@ -28,6 +28,16 @@ export interface LibraryComparison {
   common: LibraryComparisonEntry[];
 }
 
+export interface DailyQuest {
+  completedToday: boolean;
+  currentStreak: number;
+  tasks: {
+    read: boolean;
+    added: boolean;
+    finished: boolean;
+  };
+}
+
 export interface ReadingWrapped {
   period: "month" | "year" | "last-month" | "last-year";
   from: string;
@@ -150,6 +160,10 @@ export const libraryService = {
 
   wrapped(period: "month" | "year" | "last-month" | "last-year" = "month") {
     return api.get<ReadingWrapped>("/api/v1/library/wrapped", { params: { period } });
+  },
+
+  dailyQuest() {
+    return api.get<DailyQuest>("/api/v1/library/daily-quest");
   },
 
   // Vérification directe par manhwaId — bien plus fiable qu'une recherche

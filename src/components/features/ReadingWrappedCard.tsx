@@ -7,11 +7,8 @@ import { Cover } from "@/components/features/Cover";
 import { Spinner } from "@/components/ui/Primitives";
 import { toast } from "@/lib/stores/toast.store";
 import { cn } from "@/lib/utils/format";
+import { useTranslations } from "@/lib/i18n/useTranslations";
 import { Download, Flame, Loader2 } from "lucide-react";
-
-const JOURS = [
-  "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi",
-];
 
 type Period = "month" | "year" | "last-month" | "last-year";
 
@@ -30,6 +27,8 @@ export function ReadingWrappedCard() {
 }
 
 function ReadingWrappedCardContent() {
+  const t = useTranslations("wrapped");
+  const days = useTranslations("calendar").days;
   const searchParams = useSearchParams();
   const deepLinkedPeriod = searchParams.get("period");
   const initialPeriod: Period = isValidPeriod(deepLinkedPeriod) ? deepLinkedPeriod : "month";
@@ -44,7 +43,8 @@ function ReadingWrappedCardContent() {
     libraryService
       .wrapped(period)
       .then(setWrapped)
-      .catch(() => toast.error("Impossible de charger le bilan."));
+      .catch(() => toast.error(t.loadError));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
 
   async function handleExport() {
@@ -63,25 +63,29 @@ function ReadingWrappedCardContent() {
       a.download = `manhwalist-bilan-${period}.png`;
       a.click();
     } catch {
-      toast.error("Échec de l'export de l'image.");
+      toast.error(t.exportError);
     } finally {
       setExporting(false);
     }
   }
 
   const periodLabel: Record<Period, string> = {
-    month: "Bilan du mois",
-    year: "Bilan de l'année",
-    "last-month": "Bilan du mois dernier",
-    "last-year": "Bilan de l'année dernière",
+    month: t.periodMonth,
+    year: t.periodYear,
+    "last-month": t.periodLastMonth,
+    "last-year": t.periodLastYear,
   };
+
+  const chapterWord = wrapped ? (wrapped.totalChaptersRead > 1 ? t.chapterMany : t.chapterOne) : "";
+  const readWord = wrapped ? (wrapped.totalChaptersRead > 1 ? t.readMany : t.readOne) : "";
+  const seriesWord = wrapped
+    ? (wrapped.distinctSeriesCount > 1 ? t.seriesMany : t.seriesOne)
+    : "";
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">
-          Bilan de lecture
-        </h2>
+        <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">{t.heading}</h2>
         <div className="flex gap-1.5">
           <button
             onClick={() => setPeriod("month")}
@@ -90,7 +94,7 @@ function ReadingWrappedCardContent() {
               period === "month" ? "bg-vert text-[#05130c]" : "bg-sur2 text-txt3 hover:text-txt",
             )}
           >
-            Ce mois-ci
+            {t.thisMonth}
           </button>
           <button
             onClick={() => setPeriod("year")}
@@ -99,7 +103,7 @@ function ReadingWrappedCardContent() {
               period === "year" ? "bg-vert text-[#05130c]" : "bg-sur2 text-txt3 hover:text-txt",
             )}
           >
-            Cette année
+            {t.thisYear}
           </button>
         </div>
       </div>
@@ -136,9 +140,7 @@ function ReadingWrappedCardContent() {
                 {wrapped.totalChaptersRead}
               </span>
               <p className="text-[13px] text-txt2 mt-1">
-                chapitre{wrapped.totalChaptersRead > 1 ? "s" : ""} lu
-                {wrapped.totalChaptersRead > 1 ? "s" : ""}, sur{" "}
-                {wrapped.distinctSeriesCount} série{wrapped.distinctSeriesCount > 1 ? "s" : ""}
+                {chapterWord} {readWord}, {t.outOf} {wrapped.distinctSeriesCount} {seriesWord}
               </p>
             </div>
 
@@ -153,14 +155,14 @@ function ReadingWrappedCardContent() {
                   />
                   <div className="min-w-0">
                     <p className="text-[10.5px] font-mono uppercase tracking-wider text-txt3">
-                      Série la plus lue
+                      {t.mostReadTitle}
                     </p>
                     <p className="text-[13.5px] font-medium text-txt truncate">
                       {wrapped.mostReadManhwa.title}
                     </p>
                     <p className="text-[11px] text-txt3">
-                      {wrapped.mostReadManhwa.chaptersRead} chapitre
-                      {wrapped.mostReadManhwa.chaptersRead > 1 ? "s" : ""}
+                      {wrapped.mostReadManhwa.chaptersRead}{" "}
+                      {wrapped.mostReadManhwa.chaptersRead > 1 ? t.chapterMany : t.chapterOne}
                     </p>
                   </div>
                 </div>
@@ -170,17 +172,17 @@ function ReadingWrappedCardContent() {
                 {wrapped.mostActiveDay !== null && (
                   <div>
                     <p className="text-[10.5px] font-mono uppercase tracking-wider text-txt3">
-                      Jour préféré
+                      {t.favoriteDay}
                     </p>
                     <p className="text-[13.5px] font-medium text-txt">
-                      {JOURS[wrapped.mostActiveDay]}
+                      {days[wrapped.mostActiveDay]}
                     </p>
                   </div>
                 )}
                 {wrapped.topGenre && (
                   <div>
                     <p className="text-[10.5px] font-mono uppercase tracking-wider text-txt3">
-                      Genre préféré
+                      {t.favoriteGenre}
                     </p>
                     <p className="text-[13.5px] font-medium text-txt">{wrapped.topGenre}</p>
                   </div>
@@ -191,7 +193,8 @@ function ReadingWrappedCardContent() {
                 <div className="flex items-center gap-1.5 text-or">
                   <Flame size={13} />
                   <span className="text-[12px] font-medium">
-                    {wrapped.currentStreak} jour{wrapped.currentStreak > 1 ? "s" : ""} de suite
+                    {wrapped.currentStreak} {wrapped.currentStreak > 1 ? t.dayMany : t.dayOne}{" "}
+                    {t.inARow}
                   </span>
                 </div>
               )}
@@ -204,7 +207,7 @@ function ReadingWrappedCardContent() {
             className="flex items-center gap-2 text-[13px] font-medium rounded-lg px-4 py-2.5 bg-sur2 border border-ligne text-txt2 hover:border-ligne2 transition-colors disabled:opacity-60"
           >
             {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-            Télécharger l&apos;image
+            {t.downloadImage}
           </button>
         </div>
       )}

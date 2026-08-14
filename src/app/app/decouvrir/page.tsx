@@ -6,10 +6,12 @@ import { libraryService } from "@/lib/services/library.service";
 import { Cover } from "@/components/features/Cover";
 import { EmptyState, Spinner } from "@/components/ui/Primitives";
 import { toast } from "@/lib/stores/toast.store";
+import { useTranslations } from "@/lib/i18n/useTranslations";
 import type { Manhwa } from "@/types";
 import { Sparkles } from "lucide-react";
 
 export default function DecouvrirPage() {
+  const t = useTranslations("discover");
   const [items, setItems] = useState<Manhwa[] | null>(null);
 
   useEffect(() => {
@@ -17,9 +19,10 @@ export default function DecouvrirPage() {
       .recommendations(18)
       .then(setItems)
       .catch(() => {
-        toast.error("Impossible de charger les suggestions.");
+        toast.error(t.loadError);
         setItems([]);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (items === null) {
@@ -33,17 +36,15 @@ export default function DecouvrirPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-[28px] font-normal">Découvrir</h1>
-        <p className="text-[13.5px] text-txt3 mt-1 max-w-lg">
-          D&apos;après les genres de tes séries notées 8/10 ou plus.
-        </p>
+        <h1 className="font-display text-[28px] font-normal">{t.title}</h1>
+        <p className="text-[13.5px] text-txt3 mt-1 max-w-lg">{t.subtitle}</p>
       </div>
 
       {items.length === 0 && (
         <EmptyState
           icon={<Sparkles size={26} />}
-          title="Pas encore de suggestions"
-          subtitle="Note au moins une série 8/10 ou plus dans ta bibliothèque pour voir apparaître des suggestions basées sur ses genres."
+          title={t.emptyTitle}
+          subtitle={t.emptySubtitle}
         />
       )}
 

@@ -7,13 +7,9 @@ import { authService } from "@/lib/services/auth.service";
 import { tokenManager, ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { toast } from "@/lib/stores/toast.store";
+import { useTranslations } from "@/lib/i18n/useTranslations";
+import type { Messages } from "@/lib/i18n/messages/fr";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-
-const FIELD_LABELS: Record<string, string> = {
-  username: "Nom d'utilisateur",
-  email: "Adresse e-mail",
-  password: "Mot de passe",
-};
 
 // Le backend renvoie déjà un message précis (« Lettres, chiffres et tiret
 // bas uniquement »), mais affiché seul, en bas du formulaire, rien
@@ -21,11 +17,16 @@ const FIELD_LABELS: Record<string, string> = {
 // où il apparaît juste après le mot de passe alors qu'il concerne souvent
 // le nom d'utilisateur. Le préfixer avec le nom du champ lève toute
 // ambiguïté, quelle que soit sa position à l'écran.
-function describeError(e: unknown): string {
-  if (!(e instanceof ApiError)) return "Inscription impossible. Réessaie.";
+function describeError(e: unknown, t: Messages["auth"]): string {
+  if (!(e instanceof ApiError)) return t.register.genericError;
 
-  const field = e.body?.errors?.[0]?.path ?? e.body?.errors?.[0]?.param;
-  const label = typeof field === "string" ? FIELD_LABELS[field] : undefined;
+  // Lu directement plutôt que via le typage partagé `ApiErrorBody` : le
+  // corps de la réponse est de toute façon d'origine externe (le backend),
+  // pas la peine de faire dépendre ce composant d'un type précis qui
+  // pourrait ne pas être synchronisé.
+  const body = e.body as { errors?: { path?: string; param?: string }[] } | undefined;
+  const field = body?.errors?.[0]?.path ?? body?.errors?.[0]?.param;
+  const label = typeof field === "string" ? t.register.fieldLabels[field as keyof typeof t.register.fieldLabels] : undefined;
 
   return label ? `${label} — ${e.message}` : e.message;
 }
@@ -44,6 +45,7 @@ export default function RegisterPage() {
 }
 
 function RegisterForm() {
+  const t = useTranslations("auth");
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = safeRedirect(searchParams.get("redirect"));
@@ -67,10 +69,10 @@ function RegisterForm() {
       });
       tokenManager.setTokens(accessToken, refreshToken);
       setUser(user);
-      toast.success("Bienvenue sur ManhwaList.");
+      toast.success(t.register.welcome);
       router.push(redirectTo);
     } catch (e) {
-      setError(describeError(e));
+      setError(describeError(e, t));
     } finally {
       setLoading(false);
     }
@@ -79,34 +81,30 @@ function RegisterForm() {
   return (
     <div className="rounded-2xl border border-ligne bg-sur/60 p-7 flex flex-col gap-5">
       <div>
-        <h1 className="font-display text-[22px] font-normal">Inscription</h1>
-        <p className="text-[13px] text-txt3 mt-1">
-          Trois champs, rien de plus. 8 caractères minimum, une lettre, un chiffre.
-        </p>
+        <h1 className="font-display text-[22px] font-normal">{t.register.title}</h1>
+        <p className="text-[13px] text-txt3 mt-1">{t.register.subtitle}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
         <div className="flex flex-col gap-1">
           <Field
-            label="Nom d'utilisateur"
+            label={t.register.usernameLabel}
             value={username}
             onChange={setUsername}
-            placeholder="kofi_reads"
+            placeholder={t.register.usernamePlaceholder}
             autoFocus
           />
-          <p className="text-[11px] text-txt3 px-0.5">
-            Lettres, chiffres et tiret bas uniquement — accents acceptés, pas d&apos;espaces.
-          </p>
+          <p className="text-[11px] text-txt3 px-0.5">{t.register.usernameHint}</p>
         </div>
         <Field
-          label="Adresse e-mail"
+          label={t.register.emailLabel}
           value={email}
           onChange={setEmail}
           type="email"
-          placeholder="kofi@exemple.bj"
+          placeholder={t.register.emailPlaceholder}
         />
         <Field
-          label="Mot de passe"
+          label={t.register.passwordLabel}
           value={password}
           onChange={setPassword}
           type="password"
@@ -124,9 +122,9 @@ function RegisterForm() {
             className="mt-0.5 accent-vert w-3.5 h-3.5 shrink-0"
           />
           <span>
-            J&apos;ai lu et j&apos;accepte les{" "}
+            {t.register.termsPrefix}{" "}
             <Link href="/cgu" target="_blank" className="text-vert hover:underline">
-              conditions générales d&apos;utilisation
+              {t.register.termsLink}
             </Link>
             .
           </span>
@@ -138,17 +136,17 @@ function RegisterForm() {
           className="mt-1 flex items-center justify-center gap-2 bg-vert text-[#05130c] font-medium text-[14px] rounded-lg py-2.5 hover:brightness-110 transition-all disabled:opacity-60"
         >
           {loading && <Loader2 size={15} className="animate-spin" />}
-          Créer mon compte
+          {t.register.submit}
         </button>
       </form>
 
       <p className="text-center text-[13px] text-txt3">
-        Déjà un compte ?{" "}
+        {t.register.haveAccount}{" "}
         <Link
           href={`/login${redirectTo !== "/app" ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
           className="text-vert hover:underline"
         >
-          Connecte-toi
+          {t.register.logIn}
         </Link>
       </p>
     </div>
@@ -170,6 +168,7 @@ function Field({
   placeholder?: string;
   autoFocus?: boolean;
 }) {
+  const t = useTranslations("auth");
   const [visible, setVisible] = useState(false);
   const isPassword = type === "password";
 
@@ -193,7 +192,7 @@ function Field({
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            aria-label={visible ? t.hidePassword : t.showPassword}
             className="absolute right-0 top-0 h-full px-3 flex items-center text-txt3 hover:text-txt2 transition-colors"
           >
             {visible ? <EyeOff size={15} /> : <Eye size={15} />}

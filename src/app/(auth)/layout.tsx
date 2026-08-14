@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { LanguageSwitcher } from "@/components/features/LanguageSwitcher";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +14,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         aria-hidden
         className="absolute -bottom-40 -right-32 w-[480px] h-[480px] rounded-full bg-vert/[0.06] blur-[120px]"
       />
+
+      <LanguageSwitcher className="absolute top-5 right-5 z-10" />
 
       <div className="relative z-10 w-full max-w-[400px] flex flex-col gap-8">
         <Link href="/" className="flex items-center justify-center gap-2.5 font-display text-[19px]">

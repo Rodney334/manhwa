@@ -4,9 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { authService } from "@/lib/services/auth.service";
 import { ApiError } from "@/lib/api/client";
+import { useTranslations } from "@/lib/i18n/useTranslations";
 import { Loader2, MailCheck } from "lucide-react";
 
 export default function ForgetPasswordPage() {
+  const t = useTranslations("auth").forgotPassword;
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export default function ForgetPasswordPage() {
       // ou non (anti-énumération) — on ne doit rien en déduire côté front.
       setSent(true);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Une erreur est survenue. Réessaie.");
+      setError(e instanceof ApiError ? e.message : t.genericError);
     } finally {
       setLoading(false);
     }
@@ -35,26 +37,21 @@ export default function ForgetPasswordPage() {
           <MailCheck size={20} />
         </div>
         <div>
-          <h1 className="font-display text-[20px] font-normal">Vérifie ta boîte mail</h1>
+          <h1 className="font-display text-[20px] font-normal">{t.sentTitle}</h1>
           <p className="text-[13px] text-txt3 mt-1.5 max-w-[280px]">
-            Si un compte correspond à <b className="text-txt2">{email}</b>, un code de
-            réinitialisation valable une heure vient d&apos;être envoyé.
+            {t.sentBodyPrefix} <b className="text-txt2">{email}</b>
+            {t.sentBodySuffix}
           </p>
         </div>
 
         <div className="w-full rounded-lg border border-ligne bg-sur2/60 px-3.5 py-3 text-left">
           <p className="text-[12px] text-txt3 leading-relaxed">
-            Rien reçu après quelques minutes ? Vérifie ton dossier{" "}
-            <b className="text-txt2">spams / courrier indésirable</b> — les codes de
-            réinitialisation y atterrissent parfois.
+            {t.spamHint} <b className="text-txt2">{t.spamHintBold}</b> {t.spamHintSuffix}
           </p>
         </div>
 
-        <Link
-          href="/reinitialiser-mot-de-passe"
-          className="text-[13px] text-vert hover:underline"
-        >
-          J&apos;ai reçu mon code
+        <Link href="/reinitialiser-mot-de-passe" className="text-[13px] text-vert hover:underline">
+          {t.gotCode}
         </Link>
       </div>
     );
@@ -63,15 +60,13 @@ export default function ForgetPasswordPage() {
   return (
     <div className="rounded-2xl border border-ligne bg-sur/60 p-7 flex flex-col gap-5">
       <div>
-        <h1 className="font-display text-[22px] font-normal">Mot de passe oublié</h1>
-        <p className="text-[13px] text-txt3 mt-1">
-          On t&apos;envoie un code de réinitialisation valable une heure.
-        </p>
+        <h1 className="font-display text-[22px] font-normal">{t.title}</h1>
+        <p className="text-[13px] text-txt3 mt-1">{t.subtitle}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
         <label className="flex flex-col gap-1.5">
-          <span className="text-[12px] text-txt3">Adresse e-mail</span>
+          <span className="text-[12px] text-txt3">{t.emailLabel}</span>
           <input
             type="email"
             value={email}
@@ -91,13 +86,13 @@ export default function ForgetPasswordPage() {
           className="mt-1 flex items-center justify-center gap-2 bg-vert text-[#05130c] font-medium text-[14px] rounded-lg py-2.5 hover:brightness-110 transition-all disabled:opacity-60"
         >
           {loading && <Loader2 size={15} className="animate-spin" />}
-          Envoyer le code
+          {t.submit}
         </button>
       </form>
 
       <p className="text-center text-[13px] text-txt3">
         <Link href="/login" className="text-vert hover:underline">
-          Retour à la connexion
+          {t.backToLogin}
         </Link>
       </p>
     </div>

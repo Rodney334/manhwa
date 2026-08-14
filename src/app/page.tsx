@@ -1,46 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import { InstallButton } from "@/components/features/InstallButton";
+import { LanguageSwitcher } from "@/components/features/LanguageSwitcher";
+import { useTranslations } from "@/lib/i18n/useTranslations";
 import "./landing.css";
 
-const FEATURES = [
-  {
-    icon: "◐",
-    title: "Reprendre",
-    text: "Trié par retard, pas par date : la série la plus en arrière est celle qu'on abandonne.",
-  },
-  {
-    icon: "+1",
-    title: "+1 en un geste",
-    text: "Avance ta progression sans quitter la liste. Un tap, un chapitre de plus.",
-  },
-  {
-    icon: "▦",
-    title: "Bibliothèque",
-    text: "En cours, en pause, terminé, abandonné, à lire — filtre par statut, genre ou favoris.",
-  },
-  {
-    icon: "⌕",
-    title: "Recherche",
-    text: "Titre, titre alternatif ou auteur, sur tout le catalogue commun.",
-  },
-  {
-    icon: "◉",
-    title: "Notifications",
-    text: "Un nouveau chapitre sort, tu le sais — sans avoir à revérifier chaque série un par un.",
-  },
-  {
-    icon: "↗",
-    title: "Partage",
-    text: "Un lien public, en lecture seule, vers ta bibliothèque. Rien à installer côté visiteur.",
-  },
-  {
-    icon: "◧",
-    title: "Statistiques",
-    text: "Chapitres lus, note moyenne, répartition par statut — ta lecture, en chiffres.",
-  },
-];
-
 export default function LandingPage() {
+  const t = useTranslations("landing");
+
   return (
     <div className="lp">
       <div className="aurore" aria-hidden>
@@ -57,43 +25,41 @@ export default function LandingPage() {
             <em>Manhwa</em>List
           </Link>
           <nav className="nav-links">
-            <a href="#fonctionnalites">Fonctionnalités</a>
-            <a href="#stats">En chiffres</a>
+            <a href="#fonctionnalites">{t.nav.features}</a>
+            <a href="#stats">{t.nav.stats}</a>
           </nav>
-          <Link href="/login" className="cta cta--outline">
-            Se connecter
-          </Link>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <Link href="/login" className="cta cta--outline">
+              {t.login}
+            </Link>
+          </div>
         </header>
 
         <section className="heros">
-          <span className="oeil">catalogue commun · sans doublon</span>
+          <span className="oeil">{t.eyebrow}</span>
           <h1 className="titre">
-            Ne perdez plus jamais <em>le fil</em>.
+            {t.titlePrefix}
+            <em>{t.titleEm}</em>
+            {t.titleSuffix}
           </h1>
-          <p className="sous">
-            Une bibliothèque unique pour tous vos manhwas, manhuas et webtoons en cours. Suivez
-            votre progression, retrouvez où vous en étiez, et ne relisez jamais deux fois le même
-            chapitre.
-          </p>
+          <p className="sous">{t.subtitle}</p>
           <div className="heros-ctas">
             <Link href="/register" className="cta">
-              Créer un compte gratuit
+              {t.ctaRegister}
             </Link>
             <Link href="/login" className="cta cta--outline">
-              J&apos;ai déjà un compte
+              {t.ctaHaveAccount}
             </Link>
           </div>
         </section>
 
         <section className="sec" id="fonctionnalites">
-          <div className="sec__t">fonctionnalités</div>
-          <h2>Tout ce qu&apos;il faut, rien de plus.</h2>
-          <p className="desc">
-            Une interface pensée pour la lecture régulière : reprendre vite, ajouter en un geste,
-            et une vue d&apos;ensemble toujours à jour.
-          </p>
+          <div className="sec__t">{t.featuresEyebrow}</div>
+          <h2>{t.featuresTitle}</h2>
+          <p className="desc">{t.featuresDesc}</p>
           <div className="grille">
-            {FEATURES.map((f) => (
+            {t.features.map((f) => (
               <div key={f.title} className="carte">
                 <i className="ic">{f.icon}</i>
                 <b>{f.title}</b>
@@ -104,38 +70,44 @@ export default function LandingPage() {
         </section>
 
         <section className="sec" id="stats">
-          <div className="sec__t">en chiffres</div>
-          <h2>Un catalogue qui grandit avec ses lecteurs.</h2>
+          <div className="sec__t">{t.statsEyebrow}</div>
+          <h2>{t.statsTitle}</h2>
           <div className="grille" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
             <div className="carte">
-              <b style={{ fontSize: 26, fontFamily: "var(--display)", fontWeight: 400 }}>0 doublon</b>
-              <span>Dédoublonnage automatique à la soumission d&apos;une fiche.</span>
+              <b style={{ fontSize: 26, fontFamily: "var(--display)", fontWeight: 400 }}>
+                {t.statDuplicates.value}
+              </b>
+              <span>{t.statDuplicates.text}</span>
             </div>
             <div className="carte">
-              <b style={{ fontSize: 26, fontFamily: "var(--display)", fontWeight: 400 }}>3 sources</b>
-              <span>MangaDex, AniList et Jikan pour importer une fiche en un clic.</span>
+              <b style={{ fontSize: 26, fontFamily: "var(--display)", fontWeight: 400 }}>
+                {t.statSources.value}
+              </b>
+              <span>{t.statSources.text}</span>
             </div>
             <div className="carte">
-              <b style={{ fontSize: 26, fontFamily: "var(--display)", fontWeight: 400 }}>100% gratuit</b>
-              <span>Aucune fonctionnalité de suivi cachée derrière un abonnement.</span>
+              <b style={{ fontSize: 26, fontFamily: "var(--display)", fontWeight: 400 }}>
+                {t.statFree.value}
+              </b>
+              <span>{t.statFree.text}</span>
             </div>
           </div>
         </section>
 
         <section className="final">
-          <h2>Reprends là où tu t&apos;es arrêté.</h2>
-          <p className="sous">Trois champs pour créer ton compte. Pas d&apos;e-mail de confirmation à attendre.</p>
+          <h2>{t.finalTitle}</h2>
+          <p className="sous">{t.finalSubtitle}</p>
           <Link href="/register" className="cta">
-            Commencer
+            {t.finalCta}
           </Link>
         </section>
 
         <footer className="pied">
           <span suppressHydrationWarning>© {new Date().getFullYear()} ManhwaList</span>
-          <span>Fait pour les lecteurs qui suivent trop de séries à la fois.</span>
+          <span>{t.footerTagline}</span>
           <InstallButton variant="footer" />
           <Link href="/cgu" className="pied-lien">
-            Conditions générales d&apos;utilisation
+            {t.footerTerms}
           </Link>
         </footer>
       </div>

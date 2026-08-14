@@ -8,6 +8,9 @@ import { Cover } from "@/components/features/Cover";
 import { EmptyState, Spinner } from "@/components/ui/Primitives";
 import { formatRelative, cn } from "@/lib/utils/format";
 import { toast } from "@/lib/stores/toast.store";
+import { useTranslations } from "@/lib/i18n/useTranslations";
+import { useLocaleStore } from "@/lib/i18n/store";
+import type { Messages } from "@/lib/i18n/messages/fr";
 import type { Notification, NotificationManhwaRef } from "@/types";
 import { Bell, CheckCheck, Sparkles, RefreshCcw, Check, X, ShieldAlert, Info } from "lucide-react";
 
@@ -26,48 +29,53 @@ const TYPE_ICON: Record<string, React.ElementType> = {
 
 /** Construit un titre + message lisibles à partir du type et du payload —
  *  le backend ne renvoie ni l'un ni l'autre tout prêts. */
-function describeNotification(n: Notification): { title: string; message: string } {
+function describeNotification(
+  n: Notification,
+  t: Messages["notifications"]["types"],
+): { title: string; message: string } {
   const manhwa = getManhwaRef(n);
   const p = n.payload ?? {};
 
   switch (n.type) {
     case "new_chapter":
       return {
-        title: manhwa?.title ?? p.title ?? "Nouveau chapitre",
+        title: manhwa?.title ?? p.title ?? t.newChapterTitle,
         message: p.chapter
-          ? `Le chapitre ${p.chapter} vient de sortir.`
-          : "Un nouveau chapitre vient de sortir.",
+          ? t.newChapterMessage.replace("{chapter}", String(p.chapter))
+          : t.newChapterMessageGeneric,
       };
     case "status_change":
       return {
-        title: manhwa?.title ?? p.title ?? "Reprise de publication",
-        message: p.message ?? "Cette série a repris sa publication après une pause.",
+        title: manhwa?.title ?? p.title ?? t.statusChangeTitle,
+        message: p.message ?? t.statusChangeMessage,
       };
     case "submission_approved":
       return {
-        title: p.title ?? manhwa?.title ?? "Proposition validée",
-        message: p.message ?? "Ta proposition a été validée et a rejoint le catalogue commun.",
+        title: p.title ?? manhwa?.title ?? t.submissionApprovedTitle,
+        message: p.message ?? t.submissionApprovedMessage,
       };
     case "submission_rejected":
       return {
-        title: p.title ?? manhwa?.title ?? "Proposition refusée",
-        message: p.message ?? "Ta proposition n'a pas été retenue.",
+        title: p.title ?? manhwa?.title ?? t.submissionRejectedTitle,
+        message: p.message ?? t.submissionRejectedMessage,
       };
     case "account_action":
       return {
-        title: "Action sur ton compte",
-        message: p.message ?? "Une action administrative a été appliquée à ton compte.",
+        title: t.accountActionTitle,
+        message: p.message ?? t.accountActionMessage,
       };
     case "system":
     default:
       return {
-        title: p.title ?? "ManhwaList",
-        message: p.message ?? "Notification de la plateforme.",
+        title: p.title ?? t.systemTitle,
+        message: p.message ?? t.systemMessage,
       };
   }
 }
 
 export default function NotificationsPage() {
+  const t = useTranslations("notifications");
+  const locale = useLocaleStore((s) => s.locale);
   const [items, setItems] = useState<Notification[] | null>(null);
   const setUnreadCount = useNotificationsStore((s) => s.setUnreadCount);
   const decrementUnread = useNotificationsStore((s) => s.decrement);
@@ -78,7 +86,7 @@ export default function NotificationsPage() {
       setItems(res.items);
       setUnreadCount(res.unreadCount);
     } catch {
-      toast.error("Impossible de charger les notifications.");
+      toast.error(t.loadError);
       setItems([]);
     }
   }
@@ -103,9 +111,9 @@ export default function NotificationsPage() {
     setUnreadCount(0);
     try {
       await notificationsService.markAllRead();
-      toast.success("Tout marqué comme lu.");
+      toast.success(t.markAllSuccess);
     } catch {
-      toast.error("Échec de l'opération.");
+      toast.error(t.markAllError);
       load();
     }
   }
@@ -114,15 +122,15 @@ export default function NotificationsPage() {
     <div className="flex flex-col gap-6 max-w-2xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-[28px] font-normal">Notifications</h1>
-          <p className="text-[13.5px] text-txt3 mt-1">Nouveaux chapitres, modération, partages.</p>
+          <h1 className="font-display text-[28px] font-normal">{t.title}</h1>
+          <p className="text-[13.5px] text-txt3 mt-1">{t.subtitle}</p>
         </div>
         {items && items.some((n) => !n.isRead) && (
           <button
             onClick={handleMarkAll}
             className="flex items-center gap-1.5 text-[12.5px] text-txt3 hover:text-vert transition-colors"
           >
-            <CheckCheck size={14} /> Tout marquer lu
+            <CheckCheck size={14} /> {t.markAll}
           </button>
         )}
       </div>
@@ -134,13 +142,13 @@ export default function NotificationsPage() {
       )}
 
       {items !== null && items.length === 0 && (
-        <EmptyState icon={<Bell size={26} />} title="Aucune notification" />
+        <EmptyState icon={<Bell size={26} />} title={t.emptyTitle} />
       )}
 
       {items !== null && items.length > 0 && (
         <div className="flex flex-col gap-1.5">
           {items.map((n) => {
-            const { title, message } = describeNotification(n);
+            const { title, message } = describeNotification(n, t.types);
             const manhwa = getManhwaRef(n);
             const Icon = TYPE_ICON[n.type] ?? Info;
 
@@ -167,7 +175,7 @@ export default function NotificationsPage() {
                   </div>
                   <p className="text-[13px] text-txt2 mt-0.5">{message}</p>
                   <p className="text-[11px] text-txt3 font-mono mt-1" suppressHydrationWarning>
-                    {formatRelative(n.createdAt)}
+                    {formatRelative(n.createdAt, locale)}
                   </p>
                 </div>
               </div>

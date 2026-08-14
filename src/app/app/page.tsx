@@ -1,22 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { libraryService } from "@/lib/services/library.service";
+import { libraryService, type DailyQuest } from "@/lib/services/library.service";
 import { ContinueCard } from "@/components/features/LibraryCard";
 import { EmptyState, Spinner } from "@/components/ui/Primitives";
 import { toast } from "@/lib/stores/toast.store";
 import { ApiError } from "@/lib/api/client";
+import { useTranslations } from "@/lib/i18n/useTranslations";
+import type { Messages } from "@/lib/i18n/messages/fr";
 import type { LibraryEntry } from "@/types";
-import { BookOpen, PartyPopper } from "lucide-react";
+import { BookOpen, PartyPopper, Flame, Check, Target } from "lucide-react";
 import Link from "next/link";
 
-const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-const MOIS = [
-  "janvier", "février", "mars", "avril", "mai", "juin",
-  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
-];
-
 export default function AccueilPage() {
+  const t = useTranslations("resume");
   const [entries, setEntries] = useState<LibraryEntry[] | null>(null);
   const [hasLibraryEntries, setHasLibraryEntries] = useState<boolean | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -24,6 +21,11 @@ export default function AccueilPage() {
   // temps sur cette page, désactiver tous les boutons pour l'action d'une
   // seule serait plus gênant que le problème qu'on évite.
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+  const [quest, setQuest] = useState<DailyQuest | null>(null);
+
+  useEffect(() => {
+    libraryService.dailyQuest().then(setQuest).catch(() => {});
+  }, []);
 
   async function load() {
     setLoadFailed(false);
@@ -50,12 +52,13 @@ export default function AccueilPage() {
 
     if (continueResult.status === "rejected" && statsResult.status === "rejected") {
       setLoadFailed(true);
-      toast.error("Impossible de charger ta reprise.");
+      toast.error(t.loadError);
     }
   }
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Le backend masque désormais une série de "Reprendre" dès qu'une lecture
@@ -68,17 +71,22 @@ export default function AccueilPage() {
     try {
       await libraryService.increment(id, 1);
       setEntries((prev) => prev?.filter((e) => e._id !== id) ?? prev);
-      toast.success("+1 chapitre");
+      toast.success(t.incrementSuccess);
+      // Rafraîchi plutôt que déduit localement : incrémenter correctement
+      // la série de jours consécutifs dépend de si hier en faisait déjà
+      // partie, une logique déjà écrite côté backend — pas la peine de la
+      // dupliquer ici pour un appel aussi léger.
+      libraryService.dailyQuest().then(setQuest).catch(() => {});
     } catch (e) {
       // Le backend renvoie volontairement un 400 quand on est déjà au
       // dernier chapitre connu — ce n'est pas un échec, juste un signal
       // qu'il n'y a plus rien à lire pour l'instant sur cette série.
       if (e instanceof ApiError && e.status === 400) {
         setEntries((prev) => prev?.filter((entry) => entry._id !== id) ?? prev);
-        toast.info("Tu es déjà à jour sur cette série.");
+        toast.info(t.alreadyUpToDate);
         return;
       }
-      toast.error("Échec de la mise à jour.");
+      toast.error(t.updateError);
       load();
     } finally {
       setPendingIds((prev) => {
@@ -90,7 +98,7 @@ export default function AccueilPage() {
   }
 
   const now = new Date();
-  const today = `${JOURS[now.getDay()]} ${now.getDate()} ${MOIS[now.getMonth()]}`;
+  const today = `${t.days[now.getDay()]} ${now.getDate()} ${t.months[now.getMonth()]}`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -109,11 +117,11 @@ export default function AccueilPage() {
         >
           {today}
         </p>
-        <h1 className="font-display text-[28px] font-normal mt-1">Reprendre</h1>
-        <p className="text-[13.5px] text-txt3 mt-1 max-w-lg">
-          Trié par retard, pas par date : la série la plus en arrière est celle qu&apos;on abandonne.
-        </p>
+        <h1 className="font-display text-[28px] font-normal mt-1">{t.title}</h1>
+        <p className="text-[13.5px] text-txt3 mt-1 max-w-lg">{t.subtitle}</p>
       </div>
+
+      {quest && <DailyQuestCard quest={quest} t={t.quest} />}
 
       {entries === null && (
         <div className="flex justify-center py-20">
@@ -123,14 +131,9 @@ export default function AccueilPage() {
 
       {entries !== null && loadFailed && (
         <div className="flex flex-col items-center gap-3 text-center py-20">
-          <p className="text-[13.5px] text-txt3">
-            Impossible de charger ta reprise pour l&apos;instant.
-          </p>
-          <button
-            onClick={load}
-            className="text-[13px] text-vert hover:underline"
-          >
-            Réessayer
+          <p className="text-[13.5px] text-txt3">{t.loadErrorRetryText}</p>
+          <button onClick={load} className="text-[13px] text-vert hover:underline">
+            {t.retry}
           </button>
         </div>
       )}
@@ -138,14 +141,14 @@ export default function AccueilPage() {
       {entries !== null && !loadFailed && entries.length === 0 && hasLibraryEntries !== false && (
         <EmptyState
           icon={<PartyPopper size={28} />}
-          title="Tu as tout repris pour l'instant"
-          subtitle="Reviens ici dès qu'un nouveau chapitre sort sur l'une de tes séries en cours."
+          title={t.caughtUpTitle}
+          subtitle={t.caughtUpSubtitle}
           action={
             <Link
               href="/app/bibliotheque?status=reading&sort=progress"
               className="mt-1 inline-flex items-center gap-2 text-[13px] text-vert hover:underline"
             >
-              Voir tout mon retard quand même
+              {t.seeBacklogAnyway}
             </Link>
           }
         />
@@ -154,14 +157,14 @@ export default function AccueilPage() {
       {entries !== null && !loadFailed && entries.length === 0 && hasLibraryEntries === false && (
         <EmptyState
           icon={<BookOpen size={28} />}
-          title="Rien à reprendre pour l'instant"
-          subtitle="Ajoute des séries à ta bibliothèque pour les retrouver ici, triées par retard de lecture."
+          title={t.emptyTitle}
+          subtitle={t.emptySubtitle}
           action={
             <Link
               href="/app/chercher"
               className="mt-1 inline-flex items-center gap-2 bg-vert text-[#05130c] text-[13.5px] font-medium rounded-lg px-4 py-2 hover:brightness-110 transition-all"
             >
-              Chercher un manhwa
+              {t.searchManhwa}
             </Link>
           }
         />
@@ -176,6 +179,77 @@ export default function AccueilPage() {
               onIncrement={handleIncrement}
               disabled={pendingIds.has(entry._id)}
             />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Quête du jour ──────────────────────────────────────────────────────────
+// Trois façons de la remplir, pas une seule : lire un chapitre est la plus
+// évidente, mais pas toujours possible — un lecteur à jour partout n'a
+// parfois rien de nouveau à lire un jour donné. Ajouter une série ou en
+// terminer une reste toujours accessible, quoi qu'il en soit. N'importe
+// laquelle des trois suffit à valider la journée.
+
+function DailyQuestCard({
+  quest,
+  t,
+}: {
+  quest: DailyQuest;
+  t: Messages["resume"]["quest"];
+}) {
+  const questItems: { key: keyof DailyQuest["tasks"]; label: string }[] = [
+    { key: "read", label: t.read },
+    { key: "added", label: t.added },
+    { key: "finished", label: t.finished },
+  ];
+
+  return (
+    <div
+      className={`flex flex-col gap-3 rounded-xl border px-4 py-3.5 transition-colors ${
+        quest.completedToday ? "border-vert/25 bg-vert-t" : "border-ligne bg-sur/60"
+      }`}
+    >
+      <div className="flex items-center gap-3.5">
+        <div
+          className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+            quest.completedToday ? "bg-vert text-[#05130c]" : "bg-sur2 text-txt3"
+          }`}
+        >
+          {quest.completedToday ? <Check size={16} /> : <Target size={15} />}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-medium text-txt">
+            {quest.completedToday ? t.titleDone : t.title}
+          </p>
+          <p className="text-[12px] text-txt3">
+            {quest.completedToday ? t.subtitleDone : t.subtitle}
+          </p>
+        </div>
+
+        {quest.currentStreak > 0 && (
+          <div className="flex items-center gap-1.5 text-or shrink-0">
+            <Flame size={15} />
+            <span className="text-[13px] font-mono font-medium">{quest.currentStreak}</span>
+          </div>
+        )}
+      </div>
+
+      {!quest.completedToday && (
+        <div className="flex flex-wrap gap-2 pl-[3.15rem]">
+          {questItems.map((item) => (
+            <span
+              key={item.key}
+              className={`flex items-center gap-1.5 text-[11.5px] rounded-full px-2.5 py-1 ${
+                quest.tasks[item.key] ? "bg-vert-t text-vert" : "bg-sur2 text-txt3"
+              }`}
+            >
+              {quest.tasks[item.key] ? <Check size={11} /> : null}
+              {item.label}
+            </span>
           ))}
         </div>
       )}

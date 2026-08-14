@@ -6,13 +6,11 @@ import { libraryService, type ReleaseCalendarEntry } from "@/lib/services/librar
 import { Cover } from "@/components/features/Cover";
 import { EmptyState, Spinner } from "@/components/ui/Primitives";
 import { toast } from "@/lib/stores/toast.store";
+import { useTranslations } from "@/lib/i18n/useTranslations";
 import { CalendarDays, TriangleAlert } from "lucide-react";
 
-const JOURS = [
-  "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi",
-];
-
 export default function CalendrierPage() {
+  const t = useTranslations("calendar");
   const [items, setItems] = useState<ReleaseCalendarEntry[] | null>(null);
 
   useEffect(() => {
@@ -20,9 +18,10 @@ export default function CalendrierPage() {
       .releaseCalendar()
       .then(setItems)
       .catch(() => {
-        toast.error("Impossible de charger le calendrier.");
+        toast.error(t.loadError);
         setItems([]);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (items === null) {
@@ -38,24 +37,21 @@ export default function CalendrierPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-[28px] font-normal">Calendrier</h1>
-        <p className="text-[13.5px] text-txt3 mt-1 max-w-lg">
-          Jour de sortie habituel de tes séries en cours, déduit de leurs dernières parutions —
-          pas une date annoncée, une tendance observée.
-        </p>
+        <h1 className="font-display text-[28px] font-normal">{t.title}</h1>
+        <p className="text-[13.5px] text-txt3 mt-1 max-w-lg">{t.subtitle}</p>
       </div>
 
       {items.length === 0 && (
         <EmptyState
           icon={<CalendarDays size={26} />}
-          title="Pas encore assez de données"
-          subtitle="Il faut au moins deux parutions constatées sur une série pour en déduire un rythme."
+          title={t.emptyTitle}
+          subtitle={t.emptySubtitle}
         />
       )}
 
       {items.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {JOURS.map((jour, dayIndex) => {
+          {t.days.map((jour, dayIndex) => {
             const forDay = items.filter((i) => i.typicalDay === dayIndex);
             if (forDay.length === 0) return null;
 
@@ -66,7 +62,7 @@ export default function CalendrierPage() {
                     dayIndex === todayIndex ? "text-vert" : "text-txt3"
                   }`}
                 >
-                  {jour} {dayIndex === todayIndex && "· aujourd'hui"}
+                  {jour} {dayIndex === todayIndex && `· ${t.today}`}
                 </h2>
                 <div className="flex flex-col gap-2">
                   {forDay.map(({ manhwa, isLikelyOnHiatus }) => (
@@ -80,10 +76,7 @@ export default function CalendrierPage() {
                         {manhwa.title}
                       </span>
                       {isLikelyOnHiatus && (
-                        <span
-                          title="Pas de nouveau chapitre depuis bien plus longtemps que d'habitude"
-                          className="shrink-0"
-                        >
+                        <span title={t.hiatusTitle} className="shrink-0">
                           <TriangleAlert size={13} className="text-or" />
                         </span>
                       )}

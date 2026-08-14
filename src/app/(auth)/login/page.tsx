@@ -7,6 +7,7 @@ import { authService } from "@/lib/services/auth.service";
 import { tokenManager, ApiError } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { toast } from "@/lib/stores/toast.store";
+import { useTranslations } from "@/lib/i18n/useTranslations";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 
 // Sécurité minimale : n'accepter qu'un chemin interne (commence par `/`,
@@ -27,6 +28,7 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
+  const t = useTranslations("auth");
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = safeRedirect(searchParams.get("redirect"));
@@ -47,13 +49,13 @@ function LoginForm() {
       });
       tokenManager.setTokens(accessToken, refreshToken);
       setUser(user);
-      toast.success(`Content de te revoir, ${user.username}.`);
+      toast.success(t.login.welcomeBack.replace("{name}", user.username));
       router.push(redirectTo);
     } catch (e) {
       if (e instanceof ApiError) {
         setError(e.message);
       } else {
-        setError("Connexion impossible. Réessaie.");
+        setError(t.login.genericError);
       }
     } finally {
       setLoading(false);
@@ -63,22 +65,20 @@ function LoginForm() {
   return (
     <div className="rounded-2xl border border-ligne bg-sur/60 p-7 flex flex-col gap-5">
       <div>
-        <h1 className="font-display text-[22px] font-normal">Connexion</h1>
-        <p className="text-[13px] text-txt3 mt-1">
-          Ton pseudo ou ton adresse, peu importe lequel.
-        </p>
+        <h1 className="font-display text-[22px] font-normal">{t.login.title}</h1>
+        <p className="text-[13px] text-txt3 mt-1">{t.login.subtitle}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
         <Field
-          label="Identifiant"
+          label={t.login.identifierLabel}
           value={identifier}
           onChange={setIdentifier}
-          placeholder="kofi_reads ou kofi@exemple.bj"
+          placeholder={t.login.identifierPlaceholder}
           autoFocus
         />
         <Field
-          label="Mot de passe"
+          label={t.login.passwordLabel}
           value={password}
           onChange={setPassword}
           type="password"
@@ -89,7 +89,7 @@ function LoginForm() {
           href="/mot-de-passe-oublie"
           className="self-end text-[12px] text-txt3 hover:text-vert transition-colors -mt-1"
         >
-          Mot de passe oublié ?
+          {t.login.forgotPassword}
         </Link>
 
         {error && <p className="text-[12.5px] text-rouge">{error}</p>}
@@ -100,17 +100,17 @@ function LoginForm() {
           className="mt-1 flex items-center justify-center gap-2 bg-vert text-[#05130c] font-medium text-[14px] rounded-lg py-2.5 hover:brightness-110 transition-all disabled:opacity-60"
         >
           {loading && <Loader2 size={15} className="animate-spin" />}
-          Se connecter
+          {t.login.submit}
         </button>
       </form>
 
       <p className="text-center text-[13px] text-txt3">
-        Pas encore de compte ?{" "}
+        {t.login.noAccount}{" "}
         <Link
           href={`/register${redirectTo !== "/app" ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
           className="text-vert hover:underline"
         >
-          Inscris-toi
+          {t.login.signUp}
         </Link>
       </p>
     </div>
@@ -132,6 +132,7 @@ function Field({
   placeholder?: string;
   autoFocus?: boolean;
 }) {
+  const t = useTranslations("auth");
   const [visible, setVisible] = useState(false);
   const isPassword = type === "password";
 
@@ -154,7 +155,7 @@ function Field({
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            aria-label={visible ? t.hidePassword : t.showPassword}
             className="absolute right-0 top-0 h-full px-3 flex items-center text-txt3 hover:text-txt2 transition-colors"
           >
             {visible ? <EyeOff size={15} /> : <Eye size={15} />}

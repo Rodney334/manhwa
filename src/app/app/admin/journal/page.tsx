@@ -5,6 +5,9 @@ import { adminService, type AuditLog } from "@/lib/services/admin.service";
 import { EmptyState, Spinner } from "@/components/ui/Primitives";
 import { formatRelative, formatDate, cn } from "@/lib/utils/format";
 import { toast } from "@/lib/stores/toast.store";
+import { useTranslations } from "@/lib/i18n/useTranslations";
+import { useLocaleStore } from "@/lib/i18n/store";
+import type { Messages } from "@/lib/i18n/messages/fr";
 import {
   ScrollText,
   ChevronDown,
@@ -17,27 +20,6 @@ import {
 
 type Category = "auth" | "manhwa" | "user" | "job";
 
-const ACTION_META: Record<string, { label: string; category: Category }> = {
-  "auth.login_failed": { label: "Échec de connexion", category: "auth" },
-  "manhwa.create": { label: "Fiche créée", category: "manhwa" },
-  "manhwa.update": { label: "Fiche modifiée", category: "manhwa" },
-  "manhwa.delete": { label: "Fiche supprimée", category: "manhwa" },
-  "manhwa.submit": { label: "Fiche proposée", category: "manhwa" },
-  "manhwa.approve": { label: "Fiche validée", category: "manhwa" },
-  "manhwa.reject": { label: "Fiche refusée", category: "manhwa" },
-  "manhwa.merge": { label: "Fiches fusionnées", category: "manhwa" },
-  "manhwa.import": { label: "Fiche importée", category: "manhwa" },
-  "manhwa.chapter_jump": { label: "Correction de chapitre", category: "manhwa" },
-  "user.suspend": { label: "Compte suspendu", category: "user" },
-  "user.reactivate": { label: "Compte réactivé", category: "user" },
-  "user.promote": { label: "Promu administrateur", category: "user" },
-  "user.demote": { label: "Rétrogradé", category: "user" },
-  "user.delete": { label: "Compte supprimé", category: "user" },
-  "user.library_view": { label: "Bibliothèque consultée", category: "user" },
-  "job.trigger": { label: "Tâche déclenchée", category: "job" },
-  "job.run": { label: "Tâche exécutée", category: "job" },
-};
-
 const CATEGORY_STYLE: Record<Category, string> = {
   auth: "bg-rouge-t text-rouge",
   manhwa: "bg-vert-t text-vert",
@@ -45,26 +27,25 @@ const CATEGORY_STYLE: Record<Category, string> = {
   job: "bg-sur3 text-txt3",
 };
 
-const CATEGORY_LABEL: Record<Category, string> = {
-  auth: "Sécurité",
-  manhwa: "Catalogue",
-  user: "Comptes",
-  job: "Tâches",
-};
-
-const TARGET_TYPE_LABEL: Record<string, string> = {
-  manhwa: "Fiche",
-  user: "Compte",
-  libraryEntry: "Entrée bibliothèque",
-  share: "Partage",
-  job: "Tâche",
-};
-
-function actionMeta(action: string) {
-  return ACTION_META[action] ?? { label: action, category: "job" as Category };
+function actionMeta(
+  action: string,
+  actions: Messages["admin"]["journal"]["actions"],
+): { label: string; category: Category } {
+  const known = (actions as Record<string, string>)[action];
+  if (known) {
+    // Le préfixe avant le point ("manhwa.create" → "manhwa") correspond
+    // toujours à une des 4 catégories — c'est la convention de nommage du
+    // backend pour ces actions, donc fiable pour la déduire sans mapping
+    // séparé à maintenir en double.
+    const category = (action.split(".")[0] as Category) ?? "job";
+    return { label: known, category };
+  }
+  return { label: action, category: "job" };
 }
 
 export default function JournalPage() {
+  const t = useTranslations("admin").journal;
+  const locale = useLocaleStore((s) => s.locale);
   const [logs, setLogs] = useState<AuditLog[] | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -86,14 +67,15 @@ export default function JournalPage() {
         setTotal(res.total);
       })
       .catch(() => {
-        toast.error("Impossible de charger le journal.");
+        toast.error(t.loadError);
         setLogs([]);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, actionFilter]);
 
   const filteredLogs =
     logs && categoryFilter
-      ? logs.filter((l) => actionMeta(l.action).category === categoryFilter)
+      ? logs.filter((l) => actionMeta(l.action, t.actions).category === categoryFilter)
       : logs;
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -108,11 +90,8 @@ export default function JournalPage() {
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
       <div>
-        <h1 className="font-display text-[28px] font-normal">Journal</h1>
-        <p className="text-[13.5px] text-txt3 mt-1">
-          Journal d&apos;audit des actions d&apos;administration — écriture seule, rien n&apos;y
-          est jamais modifié ni supprimé.
-        </p>
+        <h1 className="font-display text-[28px] font-normal">{t.title}</h1>
+        <p className="text-[13.5px] text-txt3 mt-1">{t.subtitle}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -125,10 +104,10 @@ export default function JournalPage() {
           }}
           className="bg-sur border border-ligne rounded-lg px-3 py-2 text-[12.5px] text-txt2 outline-none focus:border-vert/50 transition-colors"
         >
-          <option value="">Toutes catégories</option>
-          {(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => (
+          <option value="">{t.allCategories}</option>
+          {(Object.keys(t.categories) as Category[]).map((c) => (
             <option key={c} value={c}>
-              {CATEGORY_LABEL[c]}
+              {t.categories[c]}
             </option>
           ))}
         </select>
@@ -141,12 +120,12 @@ export default function JournalPage() {
           }}
           className="bg-sur border border-ligne rounded-lg px-3 py-2 text-[12.5px] text-txt2 outline-none focus:border-vert/50 transition-colors"
         >
-          <option value="">Toutes actions</option>
-          {Object.entries(ACTION_META)
-            .filter(([, m]) => !categoryFilter || m.category === categoryFilter)
-            .map(([action, m]) => (
+          <option value="">{t.allActions}</option>
+          {Object.entries(t.actions)
+            .filter(([action]) => !categoryFilter || action.split(".")[0] === categoryFilter)
+            .map(([action, label]) => (
               <option key={action} value={action}>
-                {m.label}
+                {label}
               </option>
             ))}
         </select>
@@ -156,13 +135,13 @@ export default function JournalPage() {
             onClick={resetFilters}
             className="text-[12px] text-txt3 hover:text-txt2 transition-colors"
           >
-            Réinitialiser
+            {t.reset}
           </button>
         )}
 
         {total > 0 && (
           <span className="text-[11.5px] text-txt3 font-mono ml-auto">
-            {total} entrée{total > 1 ? "s" : ""}
+            {total} {total > 1 ? t.entryMany : t.entryOne}
           </span>
         )}
       </div>
@@ -176,7 +155,7 @@ export default function JournalPage() {
       {logs !== null && filteredLogs !== null && filteredLogs.length === 0 && (
         <EmptyState
           icon={<ScrollText size={26} />}
-          title={hasFilters ? "Rien avec ces filtres" : "Journal vide"}
+          title={hasFilters ? t.emptyFiltered : t.emptyTitle}
         />
       )}
 
@@ -188,6 +167,8 @@ export default function JournalPage() {
               log={log}
               expanded={expandedId === log._id}
               onToggle={() => setExpandedId((prev) => (prev === log._id ? null : log._id))}
+              t={t}
+              locale={locale}
             />
           ))}
         </div>
@@ -200,7 +181,7 @@ export default function JournalPage() {
             disabled={page <= 1}
             className="flex items-center gap-1 text-[12.5px] text-txt3 hover:text-txt disabled:opacity-40 disabled:hover:text-txt3 transition-colors"
           >
-            <ChevronLeft size={14} /> Précédent
+            <ChevronLeft size={14} /> {t.previous}
           </button>
           <span className="text-[12px] text-txt3 font-mono">
             {page} / {totalPages}
@@ -210,7 +191,7 @@ export default function JournalPage() {
             disabled={page >= totalPages}
             className="flex items-center gap-1 text-[12.5px] text-txt3 hover:text-txt disabled:opacity-40 disabled:hover:text-txt3 transition-colors"
           >
-            Suivant <ChevronRight size={14} />
+            {t.next} <ChevronRight size={14} />
           </button>
         </div>
       )}
@@ -222,16 +203,23 @@ function LogRow({
   log,
   expanded,
   onToggle,
+  t,
+  locale,
 }: {
   log: AuditLog;
   expanded: boolean;
   onToggle: () => void;
+  t: Messages["admin"]["journal"];
+  locale: "fr" | "en";
 }) {
-  const meta = actionMeta(log.action);
+  const meta = actionMeta(log.action, t.actions);
   const actor =
     typeof log.actorId === "object" && log.actorId ? log.actorId.username : undefined;
   const isSystem = log.actorRole === "system";
   const hasDetail = Boolean(log.reason || log.changes?.before || log.changes?.after);
+  const targetTypeLabel = log.targetType
+    ? (t.targetTypes as Record<string, string>)[log.targetType] ?? log.targetType
+    : undefined;
 
   return (
     <div className="border-b border-ligne last:border-b-0 bg-sur/60">
@@ -254,12 +242,12 @@ function LogRow({
         <span className="flex items-center gap-1.5 text-[12.5px] text-txt2 min-w-0 truncate">
           {isSystem ? (
             <>
-              <Bot size={12} className="text-txt3 shrink-0" /> Automatique
+              <Bot size={12} className="text-txt3 shrink-0" /> {t.automatic}
             </>
           ) : actor ? (
             actor
           ) : (
-            <span className="text-txt3">Compte supprimé</span>
+            <span className="text-txt3">{t.deletedAccount}</span>
           )}
           {log.actorRole === "admin" && (
             <ShieldAlert size={11} className="text-or shrink-0" />
@@ -276,9 +264,9 @@ function LogRow({
         <span
           className="ml-auto shrink-0 text-[11px] font-mono text-txt3"
           suppressHydrationWarning
-          title={formatDate(log.createdAt)}
+          title={formatDate(log.createdAt, locale)}
         >
-          {formatRelative(log.createdAt)}
+          {formatRelative(log.createdAt, locale)}
         </span>
 
         {hasDetail && (
@@ -296,7 +284,7 @@ function LogRow({
         <div className="px-4 pb-4 flex flex-col gap-3 border-t border-ligne pt-3">
           {log.reason && (
             <p className="text-[12.5px] text-txt2">
-              <span className="text-txt3">Motif — </span>
+              <span className="text-txt3">{t.reasonLabel}</span>
               {log.reason}
             </p>
           )}
@@ -306,7 +294,7 @@ function LogRow({
               {log.changes?.before && (
                 <div className="rounded-lg border border-rouge/20 bg-rouge-t/40 p-3">
                   <p className="text-[10.5px] uppercase tracking-wider text-txt3 font-mono mb-1.5">
-                    Avant
+                    {t.before}
                   </p>
                   <DiffFields fields={log.changes.before} />
                 </div>
@@ -314,7 +302,7 @@ function LogRow({
               {log.changes?.after && (
                 <div className="rounded-lg border border-vert/20 bg-vert-t/40 p-3">
                   <p className="text-[10.5px] uppercase tracking-wider text-txt3 font-mono mb-1.5">
-                    Après
+                    {t.after}
                   </p>
                   <DiffFields fields={log.changes.after} />
                 </div>
@@ -326,9 +314,7 @@ function LogRow({
             <p className="text-[10.5px] text-txt3 font-mono">
               {log.targetType &&
                 log.targetId &&
-                `${TARGET_TYPE_LABEL[log.targetType] ?? log.targetType} · ${
-                  log.targetLabel ?? log.targetId
-                }`}
+                `${targetTypeLabel} · ${log.targetLabel ?? log.targetId}`}
               {log.ip && ` · ${log.ip}`}
             </p>
           )}

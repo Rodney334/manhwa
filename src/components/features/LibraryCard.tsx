@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Cover } from "@/components/features/Cover";
 import { ProgressBar } from "@/components/ui/Primitives";
 import { formatChapter } from "@/lib/utils/format";
+import { useTranslations } from "@/lib/i18n/useTranslations";
 import type { LibraryEntry } from "@/types";
 import { Plus, Heart } from "lucide-react";
 
@@ -16,6 +17,7 @@ export function ContinueCard({
   onIncrement: (id: string) => void;
   disabled?: boolean;
 }) {
+  const t = useTranslations("library");
   const total = entry.manhwa.totalChapters ?? 0;
   const pct = total > 0 ? (entry.currentChapter / total) * 100 : entry.currentChapter > 0 ? 60 : 0;
 
@@ -41,7 +43,7 @@ export function ContinueCard({
       <button
         onClick={() => onIncrement(entry._id)}
         disabled={disabled}
-        aria-label="Chapitre suivant"
+        aria-label={t.nextChapterAria}
         className="self-center shrink-0 w-9 h-9 rounded-lg bg-vert-t text-vert flex items-center justify-center hover:bg-vert hover:text-[#05130c] transition-colors disabled:opacity-40 disabled:pointer-events-none"
       >
         <Plus size={16} />

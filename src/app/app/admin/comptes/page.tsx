@@ -5,16 +5,13 @@ import Link from "next/link";
 import { adminService } from "@/lib/services/admin.service";
 import { EmptyState, Spinner, StatusBadge } from "@/components/ui/Primitives";
 import { toast } from "@/lib/stores/toast.store";
+import { useTranslations } from "@/lib/i18n/useTranslations";
 import type { AccountStatus, Role, User } from "@/types";
 import { Users } from "lucide-react";
 
-const STATUS_LABELS: Record<AccountStatus, string> = {
-  active: "Actif",
-  suspended: "Suspendu",
-  banned: "Banni",
-};
-
 export default function ComptesPage() {
+  const t = useTranslations("admin").accounts;
+  const accountStatus = useTranslations("common").accountStatus;
   const [users, setUsers] = useState<User[] | null>(null);
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -24,14 +21,14 @@ export default function ComptesPage() {
       const res = await adminService.users({ pageSize: 50, search: search || undefined });
       setUsers(res.items);
     } catch {
-      toast.error("Impossible de charger les comptes.");
+      toast.error(t.loadError);
       setUsers([]);
     }
   }
 
   useEffect(() => {
-    const t = setTimeout(load, 300);
-    return () => clearTimeout(t);
+    const timeout = setTimeout(load, 300);
+    return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
@@ -41,10 +38,12 @@ export default function ComptesPage() {
 
   async function handleStatus(user: User, status: AccountStatus) {
     const reason = window.prompt(
-      `Motif (obligatoire, 5 caractères min.) — ${STATUS_LABELS[status].toLowerCase()} le compte ${user.username} :`,
+      t.statusReasonPrompt
+        .replace("{action}", accountStatus[status].toLowerCase())
+        .replace("{username}", user.username),
     );
     if (!reason || reason.trim().length < 5) {
-      if (reason !== null) toast.error("Motif trop court (5 caractères minimum).");
+      if (reason !== null) toast.error(t.reasonTooShort);
       return;
     }
     setBusyId(user._id);
@@ -53,9 +52,9 @@ export default function ComptesPage() {
       setUsers(
         (prev) => prev?.map((u) => (u._id === user._id ? { ...u, status, statusReason: reason.trim() } : u)) ?? prev,
       );
-      toast.success("Statut mis à jour.");
+      toast.success(t.statusUpdated);
     } catch {
-      toast.error("Échec de la mise à jour du statut.");
+      toast.error(t.statusUpdateError);
     } finally {
       setBusyId(null);
     }
@@ -63,14 +62,16 @@ export default function ComptesPage() {
 
   async function handleRole(user: User) {
     const newRole: Role = user.role === "admin" ? "user" : "admin";
-    if (!window.confirm(`Passer ${user.username} en ${newRole} ?`)) return;
+    if (!window.confirm(t.confirmRoleChange.replace("{username}", user.username).replace("{role}", newRole))) {
+      return;
+    }
     setBusyId(user._id);
     try {
       await adminService.setUserRole(user._id, newRole);
       setUsers((prev) => prev?.map((u) => (u._id === user._id ? { ...u, role: newRole } : u)) ?? prev);
-      toast.success("Rôle mis à jour.");
+      toast.success(t.roleUpdated);
     } catch {
-      toast.error("Échec de la mise à jour du rôle.");
+      toast.error(t.roleUpdateError);
     } finally {
       setBusyId(null);
     }
@@ -79,14 +80,14 @@ export default function ComptesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-[28px] font-normal">Comptes</h1>
-        <p className="text-[13.5px] text-txt3 mt-1">Gestion des rôles et du statut des comptes.</p>
+        <h1 className="font-display text-[28px] font-normal">{t.title}</h1>
+        <p className="text-[13.5px] text-txt3 mt-1">{t.subtitle}</p>
       </div>
 
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Chercher un compte…"
+        placeholder={t.searchPlaceholder}
         className="max-w-xs bg-sur border border-ligne rounded-lg px-3.5 py-2 text-[13px] outline-none focus:border-vert/50 transition-colors"
       />
 
@@ -97,7 +98,7 @@ export default function ComptesPage() {
       )}
 
       {users !== null && users.length === 0 && (
-        <EmptyState icon={<Users size={26} />} title="Aucun compte trouvé" />
+        <EmptyState icon={<Users size={26} />} title={t.emptyTitle} />
       )}
 
       {users !== null && users.length > 0 && (
@@ -105,10 +106,10 @@ export default function ComptesPage() {
           <table className="w-full text-[13px]">
             <thead>
               <tr className="text-left text-[11px] uppercase tracking-wider text-txt3 font-mono">
-                <th className="px-2 py-2 font-normal">Compte</th>
-                <th className="px-2 py-2 font-normal">Rôle</th>
-                <th className="px-2 py-2 font-normal">Statut</th>
-                <th className="px-2 py-2 font-normal text-right">Actions</th>
+                <th className="px-2 py-2 font-normal">{t.colAccount}</th>
+                <th className="px-2 py-2 font-normal">{t.colRole}</th>
+                <th className="px-2 py-2 font-normal">{t.colStatus}</th>
+                <th className="px-2 py-2 font-normal text-right">{t.colActions}</th>
               </tr>
             </thead>
             <tbody>
@@ -135,7 +136,7 @@ export default function ComptesPage() {
                   <td className="px-2 py-2.5">
                     <StatusBadge
                       status={u.status === "active" ? "reading" : "dropped"}
-                      label={STATUS_LABELS[u.status]}
+                      label={accountStatus[u.status]}
                     />
                   </td>
                   <td className="px-2 py-2.5 text-right">
@@ -146,7 +147,7 @@ export default function ComptesPage() {
                           disabled={busyId === u._id}
                           className="text-[11.5px] text-txt3 hover:text-vert transition-colors px-1.5 disabled:opacity-60"
                         >
-                          Réactiver
+                          {t.activate}
                         </button>
                       )}
                       {u.status !== "suspended" && (
@@ -155,7 +156,7 @@ export default function ComptesPage() {
                           disabled={busyId === u._id}
                           className="text-[11.5px] text-txt3 hover:text-or transition-colors px-1.5 disabled:opacity-60"
                         >
-                          Suspendre
+                          {t.suspend}
                         </button>
                       )}
                       {u.status !== "banned" && (
@@ -164,7 +165,7 @@ export default function ComptesPage() {
                           disabled={busyId === u._id}
                           className="text-[11.5px] text-txt3 hover:text-rouge transition-colors px-1.5 disabled:opacity-60"
                         >
-                          Bannir
+                          {t.ban}
                         </button>
                       )}
                     </div>

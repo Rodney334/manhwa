@@ -6,13 +6,15 @@ import { manhwaService } from "@/lib/services/manhwa.service";
 import { libraryService } from "@/lib/services/library.service";
 import { Cover } from "@/components/features/Cover";
 import { EmptyState, Spinner } from "@/components/ui/Primitives";
-import { PUBLICATION_STATUS_LABELS } from "@/lib/utils/format";
 import { toast } from "@/lib/stores/toast.store";
 import { ApiError } from "@/lib/api/client";
+import { useTranslations } from "@/lib/i18n/useTranslations";
 import type { Manhwa } from "@/types";
 import { Search as SearchIcon, Plus, Check } from "lucide-react";
 
 export default function ChercherPage() {
+  const t = useTranslations("search");
+  const publicationStatus = useTranslations("common").publicationStatus;
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Manhwa[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -26,12 +28,13 @@ export default function ChercherPage() {
         .search({ q: q || undefined, pageSize: 24 })
         .then((res) => setResults(res.items))
         .catch(() => {
-          toast.error("Recherche impossible pour le moment.");
+          toast.error(t.searchError);
           setResults([]);
         })
         .finally(() => setLoading(false));
     }, 350);
     return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
   async function handleAdd(manhwaId: string) {
@@ -39,13 +42,13 @@ export default function ChercherPage() {
     try {
       await libraryService.add({ manhwaId, status: "plan_to_read" });
       setAdded((prev) => new Set(prev).add(manhwaId));
-      toast.success("Ajouté à ta bibliothèque.");
+      toast.success(t.added);
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
         setAdded((prev) => new Set(prev).add(manhwaId));
-        toast.info("Déjà dans ta bibliothèque.");
+        toast.info(t.alreadyAdded);
       } else {
-        toast.error("Impossible d'ajouter cette série.");
+        toast.error(t.addError);
       }
     } finally {
       setAdding(null);
@@ -55,10 +58,8 @@ export default function ChercherPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-[28px] font-normal">Chercher</h1>
-        <p className="text-[13.5px] text-txt3 mt-1">
-          Par titre, titre alternatif ou auteur — sur tout le catalogue.
-        </p>
+        <h1 className="font-display text-[28px] font-normal">{t.title}</h1>
+        <p className="text-[13.5px] text-txt3 mt-1">{t.subtitle}</p>
       </div>
 
       <div className="relative max-w-lg">
@@ -67,7 +68,7 @@ export default function ChercherPage() {
           autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Solo Leveling, Chugong…"
+          placeholder={t.placeholder}
           className="w-full bg-sur border border-ligne rounded-xl pl-10 pr-4 py-3 text-[14px] outline-none focus:border-vert/50 transition-colors"
         />
       </div>
@@ -81,8 +82,8 @@ export default function ChercherPage() {
       {!loading && results !== null && results.length === 0 && (
         <EmptyState
           icon={<SearchIcon size={26} />}
-          title="Aucun résultat"
-          subtitle="Vérifie l'orthographe, ou essaie un titre alternatif."
+          title={t.emptyTitle}
+          subtitle={t.emptySubtitle}
         />
       )}
 
@@ -105,7 +106,7 @@ export default function ChercherPage() {
                     </h3>
                   </Link>
                   <p className="text-[11px] text-txt3 font-mono mt-auto">
-                    {PUBLICATION_STATUS_LABELS[m.status] ?? m.status}
+                    {publicationStatus[m.status] ?? m.status}
                     {m.totalChapters ? ` · ${m.totalChapters} ch.` : ""}
                   </p>
                   <button
@@ -115,11 +116,11 @@ export default function ChercherPage() {
                   >
                     {isAdded ? (
                       <>
-                        <Check size={13} /> Ajouté
+                        <Check size={13} /> {t.addedLabel}
                       </>
                     ) : (
                       <>
-                        <Plus size={13} /> Ajouter
+                        <Plus size={13} /> {t.addLabel}
                       </>
                     )}
                   </button>

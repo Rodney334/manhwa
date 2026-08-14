@@ -5,36 +5,51 @@ import { useSearchParams } from "next/navigation";
 import { libraryService } from "@/lib/services/library.service";
 import { LibraryCard } from "@/components/features/LibraryCard";
 import { EmptyState, Spinner } from "@/components/ui/Primitives";
-import { READING_STATUS_LABELS, cn } from "@/lib/utils/format";
+import { READING_STATUS_LABELS as STATUS_KEYS, cn } from "@/lib/utils/format";
 import { toast } from "@/lib/stores/toast.store";
+import { useTranslations } from "@/lib/i18n/useTranslations";
+import type { Messages } from "@/lib/i18n/messages/fr";
 import type { LibraryEntry, ReadingStatus } from "@/types";
 import { LayoutGrid, Search } from "lucide-react";
 
-const FILTERS: Array<{ value: ReadingStatus | "all"; label: string }> = [
-  { value: "all", label: "Tout" },
-  { value: "reading", label: "En cours" },
-  { value: "plan_to_read", label: "À lire" },
-  { value: "on_hold", label: "En pause" },
-  { value: "completed", label: "Terminé" },
-  { value: "dropped", label: "Abandonné" },
-];
+// `t` et `statusLabels` viennent tous deux du composant (via `useTranslations`),
+// donc fonctions plutôt que constantes de module — même principe que
+// Sidebar.tsx / OnboardingTour.tsx.
+function buildFilters(
+  t: Messages["library"],
+  statusLabels: Messages["common"]["readingStatus"],
+): Array<{ value: ReadingStatus | "all"; label: string }> {
+  return [
+    { value: "all", label: t.filterAll },
+    { value: "reading", label: statusLabels.reading },
+    { value: "plan_to_read", label: statusLabels.plan_to_read },
+    { value: "on_hold", label: statusLabels.on_hold },
+    { value: "completed", label: statusLabels.completed },
+    { value: "dropped", label: statusLabels.dropped },
+  ];
+}
 
 type SortOption = "lastRead" | "progress" | "title" | "score" | "added";
 
-const SORTS: Array<{ value: SortOption; label: string }> = [
-  { value: "lastRead", label: "Dernière lecture" },
-  { value: "progress", label: "Retard (le plus en retard d'abord)" },
-  { value: "title", label: "Titre" },
-  { value: "score", label: "Note" },
-  { value: "added", label: "Date d'ajout" },
-];
+function buildSorts(t: Messages["library"]): Array<{ value: SortOption; label: string }> {
+  return [
+    { value: "lastRead", label: t.sortLastRead },
+    { value: "progress", label: t.sortProgress },
+    { value: "title", label: t.sortTitle },
+    { value: "score", label: t.sortScore },
+    { value: "added", label: t.sortAdded },
+  ];
+}
 
+// Vérification structurelle uniquement (les valeurs de statut, ex.
+// "plan_to_read", ne dépendent pas de la langue) — `STATUS_KEYS` sert
+// seulement pour ses clés, jamais affiché.
 function isReadingStatus(value: string | null): value is ReadingStatus {
-  return !!value && value in READING_STATUS_LABELS;
+  return !!value && value in STATUS_KEYS;
 }
 
 function isSortOption(value: string | null): value is SortOption {
-  return !!value && SORTS.some((s) => s.value === value);
+  return !!value && ["lastRead", "progress", "title", "score", "added"].includes(value);
 }
 
 export default function BibliothequePage() {
@@ -48,9 +63,14 @@ export default function BibliothequePage() {
 }
 
 function BibliothequeContent() {
+  const t = useTranslations("library");
+  const statusLabels = useTranslations("common").readingStatus;
   const searchParams = useSearchParams();
   const initialStatus = searchParams.get("status");
   const initialSort = searchParams.get("sort");
+
+  const FILTERS = buildFilters(t, statusLabels);
+  const SORTS = buildSorts(t);
 
   const [status, setStatus] = useState<ReadingStatus | "all">(
     isReadingStatus(initialStatus) ? initialStatus : "all",
@@ -75,13 +95,14 @@ function BibliothequeContent() {
       })
       .catch(() => {
         if (active) {
-          toast.error("Impossible de charger la bibliothèque.");
+          toast.error(t.loadError);
           setEntries([]);
         }
       });
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, sort, search]);
 
   // Compteurs par statut — indépendants des filtres/recherche en cours,
@@ -105,8 +126,8 @@ function BibliothequeContent() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-[28px] font-normal">Bibliothèque</h1>
-        <p className="text-[13.5px] text-txt3 mt-1">Toutes tes séries, un seul endroit.</p>
+        <h1 className="font-display text-[28px] font-normal">{t.title}</h1>
+        <p className="text-[13.5px] text-txt3 mt-1">{t.subtitle}</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
@@ -155,7 +176,7 @@ function BibliothequeContent() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filtrer par titre…"
+              placeholder={t.searchPlaceholder}
               className="w-full bg-sur border border-ligne rounded-lg pl-8 pr-3 py-2 text-[13px] outline-none focus:border-vert/50 transition-colors"
             />
           </div>
@@ -171,8 +192,8 @@ function BibliothequeContent() {
       {entries !== null && entries.length === 0 && (
         <EmptyState
           icon={<LayoutGrid size={28} />}
-          title="Aucune série ici"
-          subtitle="Change de filtre ou ajoute des séries depuis la recherche."
+          title={t.emptyTitle}
+          subtitle={t.emptySubtitle}
         />
       )}
 
@@ -182,7 +203,7 @@ function BibliothequeContent() {
             <LibraryCard
               key={entry._id}
               entry={entry}
-              statusLabel={READING_STATUS_LABELS[entry.status] ?? entry.status}
+              statusLabel={statusLabels[entry.status] ?? entry.status}
             />
           ))}
         </div>

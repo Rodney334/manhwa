@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { libraryService, type HeatmapDay } from "@/lib/services/library.service";
 import { ReadingWrappedCard } from "@/components/features/ReadingWrappedCard";
 import { Spinner, EmptyState } from "@/components/ui/Primitives";
-import { READING_STATUS_LABELS } from "@/lib/utils/format";
 import { toast } from "@/lib/stores/toast.store";
+import { useTranslations } from "@/lib/i18n/useTranslations";
+import type { Messages } from "@/lib/i18n/messages/fr";
 import type { LibraryStats, ReadingStatus } from "@/types";
 import { BarChart3 } from "lucide-react";
 
@@ -17,12 +18,9 @@ const STATUS_ORDER: ReadingStatus[] = [
   "dropped",
 ];
 
-const MOIS_COURT = [
-  "jan", "fév", "mar", "avr", "mai", "jun",
-  "jul", "aoû", "sep", "oct", "nov", "déc",
-];
-
 export default function StatistiquesPage() {
+  const t = useTranslations("statistics");
+  const readingStatus = useTranslations("common").readingStatus;
   const [stats, setStats] = useState<LibraryStats | null>(null);
   const [error, setError] = useState(false);
   const [heatmap, setHeatmap] = useState<HeatmapDay[] | null>(null);
@@ -32,7 +30,7 @@ export default function StatistiquesPage() {
       .stats()
       .then(setStats)
       .catch(() => {
-        toast.error("Impossible de charger les statistiques.");
+        toast.error(t.loadError);
         setError(true);
       });
     // Indépendant du reste : un échec ici ne doit pas priver la page du
@@ -41,11 +39,12 @@ export default function StatistiquesPage() {
       .readingHeatmap(365)
       .then(setHeatmap)
       .catch(() => setHeatmap([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (error) {
     return (
-      <EmptyState icon={<BarChart3 size={26} />} title="Statistiques indisponibles pour le moment" />
+      <EmptyState icon={<BarChart3 size={26} />} title={t.unavailableTitle} />
     );
   }
 
@@ -74,39 +73,39 @@ export default function StatistiquesPage() {
   return (
     <div className="flex flex-col gap-9 max-w-3xl">
       <div>
-        <h1 className="font-display text-[28px] font-normal">Statistiques</h1>
-        <p className="text-[13.5px] text-txt3 mt-1">Ta lecture, en chiffres.</p>
+        <h1 className="font-display text-[28px] font-normal">{t.title}</h1>
+        <p className="text-[13.5px] text-txt3 mt-1">{t.subtitle}</p>
       </div>
 
       {!hasAnyData && (
         <EmptyState
           icon={<BarChart3 size={26} />}
-          title="Pas encore de données"
-          subtitle="Ajoute des séries et fais avancer ta progression pour voir tes statistiques apparaître ici."
+          title={t.emptyTitle}
+          subtitle={t.emptySubtitle}
         />
       )}
 
       {hasAnyData && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Séries" value={stats.totalEntries} />
-            <StatCard label="Chapitres lus" value={stats.chaptersRead} />
+            <StatCard label={t.statSeries} value={stats.totalEntries} />
+            <StatCard label={t.statChaptersRead} value={stats.chaptersRead} />
             <StatCard
-              label="Note moyenne"
+              label={t.statAverageScore}
               value={stats.averageScore !== null ? stats.averageScore.toFixed(1) : "—"}
             />
-            <StatCard label="Favoris" value={stats.favorites} />
+            <StatCard label={t.statFavorites} value={stats.favorites} />
           </div>
 
           <div className="flex flex-col gap-3">
-            <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">Par statut</h2>
+            <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">{t.byStatus}</h2>
             <div className="flex flex-col gap-2.5">
               {STATUS_ORDER.map((s) => {
                 const count = statusMap.get(s) ?? 0;
                 return (
                   <div key={s} className="flex items-center gap-3">
                     <span className="w-24 text-[12.5px] text-txt2 shrink-0">
-                      {READING_STATUS_LABELS[s]}
+                      {readingStatus[s]}
                     </span>
                     <div className="flex-1 h-6 rounded-lg bg-sur2 overflow-hidden">
                       <div
@@ -124,7 +123,7 @@ export default function StatistiquesPage() {
           {months.length > 0 && (
             <div className="flex flex-col gap-3">
               <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">
-                Activité (12 derniers mois)
+                {t.activity}
               </h2>
               <div className="flex items-end gap-1.5 h-32 border-b border-ligne pb-1">
                 {months.map((m) => {
@@ -140,7 +139,7 @@ export default function StatistiquesPage() {
                         className="w-full rounded-t bg-vert/60 group-hover:bg-vert transition-colors"
                         style={{ height: `${heightPct}%` }}
                       />
-                      <span className="text-[10px] font-mono text-txt3">{MOIS_COURT[idx] ?? "?"}</span>
+                      <span className="text-[10px] font-mono text-txt3">{t.monthsShort[idx] ?? "?"}</span>
                     </div>
                   );
                 })}
@@ -148,14 +147,14 @@ export default function StatistiquesPage() {
             </div>
           )}
 
-          {heatmap && heatmap.length > 0 && <ReadingHeatmap days={heatmap} />}
+          {heatmap && heatmap.length > 0 && <ReadingHeatmap days={heatmap} t={t} />}
 
           <ReadingWrappedCard />
 
           {topGenres.length > 0 && (
             <div className="flex flex-col gap-3">
               <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">
-                Genres les plus lus
+                {t.topGenres}
               </h2>
               <div className="flex flex-col gap-2.5">
                 {topGenres.map((g) => (
@@ -191,7 +190,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 // Grille façon "contributions" — une colonne par semaine, 7 lignes
 // (dimanche en haut). L'intensité de vert reflète le nombre de chapitres
 // lus ce jour-là, relatif au jour le plus actif de la période affichée.
-function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
+function ReadingHeatmap({ days, t }: { days: HeatmapDay[]; t: Messages["statistics"] }) {
   const byDate = new Map(days.map((d) => [d.date, d.chaptersRead]));
   const max = Math.max(1, ...days.map((d) => d.chaptersRead));
 
@@ -225,7 +224,7 @@ function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">
-        Régularité (12 derniers mois)
+        {t.heatmapTitle}
       </h2>
       <div className="flex gap-[3px] overflow-x-auto pb-1">
         {weeks.map((week, wi) => (
@@ -234,10 +233,13 @@ function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
               const key = date.toISOString().slice(0, 10);
               const count = byDate.get(key) ?? 0;
               const inRange = date <= today;
+              const tooltip = (count > 1 ? t.heatmapTooltipMany : t.heatmapTooltipOne)
+                .replace("{date}", key)
+                .replace("{count}", String(count));
               return (
                 <div
                   key={di}
-                  title={inRange ? `${key} — ${count} chapitre${count > 1 ? "s" : ""}` : undefined}
+                  title={inRange ? tooltip : undefined}
                   className={`w-[11px] h-[11px] rounded-[2px] ${inRange ? intensity(count) : "bg-transparent"}`}
                 />
               );

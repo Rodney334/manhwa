@@ -5,13 +5,18 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { sharesService, type SharedList } from "@/lib/services/shares.service";
 import { Spinner } from "@/components/ui/Primitives";
-import { READING_STATUS_LABELS, PUBLICATION_STATUS_LABELS, formatChapter } from "@/lib/utils/format";
+import { formatChapter } from "@/lib/utils/format";
 import { coverUrl, ApiError } from "@/lib/api/client";
+import { useTranslations } from "@/lib/i18n/useTranslations";
 import { Heart, Star, Lock, Ban, ArrowRight } from "lucide-react";
 
 type LoadState = "loading" | "ok" | "not_found" | "auth_required" | "error";
 
 export default function PublicSharePage() {
+  const t = useTranslations("publicShare");
+  const share = useTranslations("share");
+  const readingStatus = useTranslations("common").readingStatus;
+  const publicationStatus = useTranslations("common").publicationStatus;
   const params = useParams<{ token: string }>();
   const [data, setData] = useState<SharedList | null>(null);
   const [state, setState] = useState<LoadState>("loading");
@@ -59,44 +64,38 @@ export default function PublicSharePage() {
         {state === "not_found" && (
           <div className="flex flex-col items-center gap-3 text-center py-24">
             <Ban size={28} className="text-txt3" />
-            <h1 className="font-display text-[20px] font-normal">Lien introuvable</h1>
-            <p className="text-[13px] text-txt3 max-w-xs">
-              Ce lien de partage n&apos;existe pas, a été révoqué, ou a expiré.
-            </p>
+            <h1 className="font-display text-[20px] font-normal">{t.notFoundTitle}</h1>
+            <p className="text-[13px] text-txt3 max-w-xs">{t.notFoundText}</p>
           </div>
         )}
 
         {state === "auth_required" && (
           <div className="flex flex-col items-center gap-3 text-center py-24">
             <Lock size={28} className="text-txt3" />
-            <h1 className="font-display text-[20px] font-normal">Compte requis</h1>
-            <p className="text-[13px] text-txt3 max-w-xs">
-              Ce lien n&apos;est consultable que par un compte ManhwaList.
-            </p>
+            <h1 className="font-display text-[20px] font-normal">{t.authRequiredTitle}</h1>
+            <p className="text-[13px] text-txt3 max-w-xs">{t.authRequiredText}</p>
             <Link
               href={`/login?redirect=${encodeURIComponent(`/partage/${params.token}`)}`}
               className="mt-2 inline-flex items-center gap-2 bg-vert text-[#05130c] text-[13.5px] font-medium rounded-lg px-4 py-2 hover:brightness-110 transition-all"
             >
-              Se connecter
+              {t.login}
             </Link>
           </div>
         )}
 
         {state === "error" && (
-          <p className="text-center text-[13px] text-txt3 py-24">
-            Impossible de charger cette liste pour le moment. Réessaie plus tard.
-          </p>
+          <p className="text-center text-[13px] text-txt3 py-24">{t.loadError}</p>
         )}
 
         {state === "ok" && data && (
           <>
             <div>
               <h1 className="font-display text-[26px] font-normal">
-                {data.share.title || `La bibliothèque de ${data.owner.username}`}
+                {data.share.title || t.defaultTitle.replace("{username}", data.owner.username)}
               </h1>
               <p className="text-[13px] text-txt3 mt-1">
-                Par {data.owner.username} · {data.counts.total} série
-                {data.counts.total > 1 ? "s" : ""}
+                {t.byAuthor.replace("{username}", data.owner.username)}
+                {data.counts.total} {data.counts.total > 1 ? share.seriesMany : share.seriesOne}
               </p>
             </div>
 
@@ -104,18 +103,14 @@ export default function PublicSharePage() {
               href="/register"
               className="flex items-center justify-between gap-3 rounded-xl border border-vert/25 bg-vert-t px-4 py-3 hover:border-vert/50 transition-colors"
             >
-              <span className="text-[13px] text-txt2">
-                Toi aussi, arrête de perdre le fil sur tes lectures.
-              </span>
+              <span className="text-[13px] text-txt2">{t.ctaText}</span>
               <span className="flex items-center gap-1 text-[12.5px] font-medium text-vert shrink-0">
-                Créer un compte gratuit <ArrowRight size={13} />
+                {t.ctaButton} <ArrowRight size={13} />
               </span>
             </Link>
 
             {data.entries.length === 0 ? (
-              <p className="text-center text-[13px] text-txt3 py-16">
-                Cette liste ne contient aucune série pour l&apos;instant.
-              </p>
+              <p className="text-center text-[13px] text-txt3 py-16">{t.emptyText}</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {data.entries.map((entry) => (
@@ -150,9 +145,13 @@ export default function PublicSharePage() {
                         {data.share.includeProgress && entry.currentChapter !== undefined ? (
                           <span>ch. {formatChapter(entry.currentChapter)}</span>
                         ) : (
-                          <span>{PUBLICATION_STATUS_LABELS[entry.publicationStatus ?? ""] ?? ""}</span>
+                          <span>
+                            {publicationStatus[
+                              entry.publicationStatus as keyof typeof publicationStatus
+                            ] ?? ""}
+                          </span>
                         )}
-                        <span>{READING_STATUS_LABELS[entry.status] ?? entry.status}</span>
+                        <span>{readingStatus[entry.status] ?? entry.status}</span>
                       </div>
                       {entry.score !== undefined && (
                         <span className="flex items-center gap-1 text-[11px] text-or font-mono">

@@ -78,11 +78,14 @@ export function InstallButton({ variant = "footer" }: { variant?: "footer" | "pa
   }
 
   if (!deferredPrompt) {
-    return (
-      <span className={variant === "footer" ? "pied-lien" : "text-[12.5px] text-txt3"}>
-        Pas encore proposé ? Ouvre le menu ⋮ de Chrome → « Installer l&apos;application ».
-      </span>
-    );
+    // Variante "panel" (sidebar, profil) : rien tant que Chrome n'a pas
+    // lui-même proposé l'installation — le rappel manuel ("Ouvre le menu…")
+    // prend toute la largeur disponible et écrase le sélecteur de langue
+    // à côté. La variante "footer" (page publique) garde le rappel : elle
+    // n'a rien d'autre à côté avec qui entrer en conflit.
+    if (variant === "panel") return null;
+
+    return <span className="pied-lien">Pas encore proposé ? Ouvre le menu ⋮ de Chrome → « Installer l&apos;application ».</span>;
   }
 
   return (

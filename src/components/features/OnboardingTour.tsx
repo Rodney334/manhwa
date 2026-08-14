@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { useOnboardingStore } from "@/lib/stores/onboarding.store";
 import { useMobileNavStore } from "@/lib/stores/mobile-nav.store";
+import { useTranslations } from "@/lib/i18n/useTranslations";
+import type { Messages } from "@/lib/i18n/messages/fr";
 import { ArrowRight, ArrowLeft, PartyPopper } from "lucide-react";
 
 function storageKey(userId: string) {
@@ -16,44 +18,19 @@ type Step = {
   body: string;
 };
 
-const STEPS: Step[] = [
-  {
-    tourId: "reprendre",
-    title: "Reprendre",
-    body:
-      "Ton point de départ à chaque visite. Classé par retard, pas par date : la série que tu risques le plus d'abandonner apparaît en premier. Lis un chapitre, elle laisse gentiment la place aux autres.",
-  },
-  {
-    tourId: "bibliotheque",
-    title: "Bibliothèque",
-    body:
-      "Toutes tes séries, sans exception — en cours, en pause, terminées, abandonnées, à lire. Filtre, trie, note chacune d'elles.",
-  },
-  {
-    tourId: "chercher",
-    title: "Chercher",
-    body:
-      "Tape un titre, un auteur, ou un titre alternatif — le catalogue s'enrichit tout seul si besoin, sans aucune vérification manuelle de ta part.",
-  },
-  {
-    tourId: "calendrier",
-    title: "Calendrier",
-    body:
-      "Tes séries en cours, groupées par jour de parution habituel — déduit de leurs habitudes réelles, jamais d'une date qu'on t'aurait simplement annoncée.",
-  },
-  {
-    tourId: "decouvrir",
-    title: "Découvrir",
-    body:
-      "Des suggestions basées sur les genres de tes séries les mieux notées. Rien tant que tu n'as pas noté au moins une série 8/10 ou plus.",
-  },
-  {
-    tourId: "partage",
-    title: "Partage",
-    body:
-      "Un lien en lecture seule vers ta bibliothèque, à envoyer à qui tu veux — toi seul·e décides de ce qu'il montre. Compare aussi ta liste à celle d'un ami.",
-  },
-];
+// Fonction plutôt que constante de module, comme dans Sidebar.tsx : les
+// libellés dépendent de la langue choisie, connue seulement à l'intérieur
+// du composant via `useTranslations`.
+function buildSteps(t: Messages["onboarding"]["steps"]): Step[] {
+  return [
+    { tourId: "reprendre", title: t.resume.title, body: t.resume.body },
+    { tourId: "bibliotheque", title: t.library.title, body: t.library.body },
+    { tourId: "chercher", title: t.search.title, body: t.search.body },
+    { tourId: "calendrier", title: t.calendar.title, body: t.calendar.body },
+    { tourId: "decouvrir", title: t.discover.title, body: t.discover.body },
+    { tourId: "partage", title: t.share.title, body: t.share.body },
+  ];
+}
 
 const CONFETTI_COLORS = ["#26e07e", "#d4a94e", "#e9ebee", "#0f3a25"];
 
@@ -71,12 +48,15 @@ function findTargetRect(tourId: string): Rect | null {
 }
 
 export function OnboardingTour() {
+  const t = useTranslations("onboarding");
   const user = useAuthStore((s) => s.user);
   const isOpen = useOnboardingStore((s) => s.isOpen);
   const open = useOnboardingStore((s) => s.open);
   const close = useOnboardingStore((s) => s.close);
   const openMobileNav = useMobileNavStore((s) => s.open);
   const closeMobileNav = useMobileNavStore((s) => s.close);
+
+  const STEPS = useMemo(() => buildSteps(t.steps), [t]);
 
   const [step, setStep] = useState(-1);
   const [rect, setRect] = useState<Rect | null>(null);
@@ -249,24 +229,20 @@ export function OnboardingTour() {
               </span>
             </div>
             <h2 className="font-display text-[22px] font-normal">
-              Bienvenue, {user?.username ?? ""} !
+              {t.intro.title.replace("{name}", user?.username ?? "")}
             </h2>
-            <p className="text-[13.5px] text-txt2 leading-relaxed">
-              Merci de nous rejoindre. On va te faire faire un petit tour du propriétaire — six
-              étapes, à peine une minute, pour que tu saches où trouver chaque chose dès le
-              départ.
-            </p>
+            <p className="text-[13.5px] text-txt2 leading-relaxed">{t.intro.body}</p>
             <button
               onClick={() => setStep(0)}
               className="mt-1 flex items-center gap-2 bg-vert text-[#05130c] font-medium text-[13.5px] rounded-lg px-5 py-2.5 hover:brightness-110 transition-all"
             >
-              Commencer la visite <ArrowRight size={14} />
+              {t.intro.cta} <ArrowRight size={14} />
             </button>
             <button
               onClick={handleClose}
               className="text-[11.5px] text-txt3 hover:text-txt2 transition-colors"
             >
-              Merci, je préfère explorer par moi-même
+              {t.skip}
             </button>
           </div>
         </div>
@@ -277,7 +253,7 @@ export function OnboardingTour() {
         >
           <div>
             <p className="text-[10.5px] font-mono uppercase tracking-wider text-vert">
-              Étape {step + 1} sur {STEPS.length}
+              {t.stepLabel.replace("{current}", String(step + 1)).replace("{total}", String(STEPS.length))}
             </p>
             <h2 className="font-display text-[18px] font-normal mt-1">{current.title}</h2>
           </div>
@@ -299,7 +275,7 @@ export function OnboardingTour() {
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setStep((s) => Math.max(-1, s - 1))}
-                aria-label="Étape précédente"
+                aria-label={t.prevAria}
                 className="text-txt3 hover:text-txt transition-colors p-1.5"
               >
                 <ArrowLeft size={14} />
@@ -308,7 +284,7 @@ export function OnboardingTour() {
                 onClick={() => setStep((s) => s + 1)}
                 className="flex items-center gap-1.5 bg-vert text-[#05130c] font-medium text-[12.5px] rounded-lg px-3.5 py-1.5 hover:brightness-110 transition-all"
               >
-                Suivant <ArrowRight size={12} />
+                {t.next} <ArrowRight size={12} />
               </button>
             </div>
           </div>
@@ -317,7 +293,7 @@ export function OnboardingTour() {
             onClick={handleClose}
             className="text-[11px] text-txt3 hover:text-txt2 transition-colors self-center"
           >
-            Merci, je préfère explorer par moi-même
+            {t.skip}
           </button>
         </div>
       ) : (
@@ -325,17 +301,14 @@ export function OnboardingTour() {
           <div className="w-full max-w-sm rounded-2xl border border-ligne bg-sur p-7 flex flex-col items-center text-center gap-3">
             <PartyPopper size={30} className="text-vert" />
             <h2 className="font-display text-[21px] font-normal">
-              Tu es prêt·e, {user?.username ?? ""}
+              {t.outro.title.replace("{name}", user?.username ?? "")}
             </h2>
-            <p className="text-[13.5px] text-txt2 leading-relaxed">
-              Merci de ta patience, c&apos;était la dernière étape. Tu peux revoir ce tour à tout
-              moment depuis ton profil.
-            </p>
+            <p className="text-[13.5px] text-txt2 leading-relaxed">{t.outro.body}</p>
             <button
               onClick={handleClose}
               className="mt-1 flex items-center gap-2 bg-vert text-[#05130c] font-medium text-[13.5px] rounded-lg px-5 py-2.5 hover:brightness-110 transition-all"
             >
-              C&apos;est parti !
+              {t.outro.cta}
             </button>
           </div>
         </div>
