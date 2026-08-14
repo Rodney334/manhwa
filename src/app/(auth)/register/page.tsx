@@ -9,6 +9,27 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { toast } from "@/lib/stores/toast.store";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 
+const FIELD_LABELS: Record<string, string> = {
+  username: "Nom d'utilisateur",
+  email: "Adresse e-mail",
+  password: "Mot de passe",
+};
+
+// Le backend renvoie déjà un message précis (« Lettres, chiffres et tiret
+// bas uniquement »), mais affiché seul, en bas du formulaire, rien
+// n'indique VISUELLEMENT à quel champ il se rapporte — surtout gênant ici
+// où il apparaît juste après le mot de passe alors qu'il concerne souvent
+// le nom d'utilisateur. Le préfixer avec le nom du champ lève toute
+// ambiguïté, quelle que soit sa position à l'écran.
+function describeError(e: unknown): string {
+  if (!(e instanceof ApiError)) return "Inscription impossible. Réessaie.";
+
+  const field = e.body?.errors?.[0]?.path ?? e.body?.errors?.[0]?.param;
+  const label = typeof field === "string" ? FIELD_LABELS[field] : undefined;
+
+  return label ? `${label} — ${e.message}` : e.message;
+}
+
 function safeRedirect(raw: string | null): string {
   if (raw && raw.startsWith("/") && !raw.startsWith("//")) return raw;
   return "/app";
@@ -49,11 +70,7 @@ function RegisterForm() {
       toast.success("Bienvenue sur ManhwaList.");
       router.push(redirectTo);
     } catch (e) {
-      if (e instanceof ApiError) {
-        setError(e.message);
-      } else {
-        setError("Inscription impossible. Réessaie.");
-      }
+      setError(describeError(e));
     } finally {
       setLoading(false);
     }
@@ -69,13 +86,18 @@ function RegisterForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-        <Field
-          label="Nom d'utilisateur"
-          value={username}
-          onChange={setUsername}
-          placeholder="kofi_reads"
-          autoFocus
-        />
+        <div className="flex flex-col gap-1">
+          <Field
+            label="Nom d'utilisateur"
+            value={username}
+            onChange={setUsername}
+            placeholder="kofi_reads"
+            autoFocus
+          />
+          <p className="text-[11px] text-txt3 px-0.5">
+            Lettres, chiffres et tiret bas uniquement — accents acceptés, pas d&apos;espaces.
+          </p>
+        </div>
         <Field
           label="Adresse e-mail"
           value={email}
