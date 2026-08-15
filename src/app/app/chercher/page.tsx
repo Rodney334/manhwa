@@ -19,31 +19,47 @@ function normalize(value: string): string {
   return value.toLowerCase().trim().replace(/\s+/g, " ");
 }
 
+function words(value: string): string[] {
+  return normalize(value)
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((w) => w.length >= 2);
+}
+
 /**
  * Quel titre afficher sur CETTE carte, pour CETTE recherche : si la requête
  * correspond mieux à un alias qu'au titre principal, l'alias tapé prend sa
  * place à l'écran — rien n'est enregistré, ça ne change que l'affichage
  * pendant que l'utilisateur regarde ses résultats. Le titre personnel
  * (sauvegardé, lui, à l'ajout) est une fonctionnalité séparée.
+ *
+ * Comparaison MOT PAR MOT, pas en bloc continu : le backend qui a produit
+ * ces résultats matche lui aussi mot par mot (index texte MongoDB) — un
+ * alias contenant « Disaster-Class Necromancer » doit remonter pour la
+ * requête « catastrophique necromancer » même si les mots n'apparaissent
+ * pas dans le même ordre ni collés l'un à l'autre. Une comparaison en bloc
+ * continu (« la requête entière est une sous-chaîne de l'alias ») ratait
+ * précisément ce genre de cas.
  */
 function matchedDisplayTitle(manhwa: Manhwa, query: string): string {
-  const q = normalize(query);
-  if (!q || !manhwa.altTitles?.length) return manhwa.title;
-  if (normalize(manhwa.title).startsWith(q)) return manhwa.title;
+  const queryWords = words(query);
+  if (queryWords.length === 0 || !manhwa.altTitles?.length) return manhwa.title;
 
-  const exact = manhwa.altTitles.find((alt) => normalize(alt) === q);
-  if (exact) return exact;
+  const titleWords = new Set(words(manhwa.title));
+  if (queryWords.every((w) => titleWords.has(w))) return manhwa.title;
 
-  const prefixed = manhwa.altTitles
-    .filter((alt) => normalize(alt).startsWith(q))
-    .sort((a, b) => a.length - b.length)[0];
-  if (prefixed) return prefixed;
+  // Le meilleur alias est celui qui couvre le plus de mots de la requête,
+  // et parmi les ex æquo, le plus court — moins de bruit autour du terme
+  // cherché.
+  const scored = manhwa.altTitles
+    .map((alt) => {
+      const altWords = new Set(words(alt));
+      const covered = queryWords.filter((w) => altWords.has(w)).length;
+      return { alt, covered };
+    })
+    .filter((entry) => entry.covered > 0)
+    .sort((a, b) => b.covered - a.covered || a.alt.length - b.alt.length);
 
-  const contained = manhwa.altTitles
-    .filter((alt) => normalize(alt).includes(q))
-    .sort((a, b) => a.length - b.length)[0];
-
-  return contained ?? manhwa.title;
+  return scored[0]?.alt ?? manhwa.title;
 }
 
 export default function ChercherPage() {
@@ -71,8 +87,8 @@ export default function ChercherPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  async function handleAdd(manhwaId: string, displayTitle: string) {
-    setAdding(manhwaId);
+  async function handleAdd(manhwa: Manhwa, displayTitle: string) {
+    setAdding(manhwa._id);
     try {
       // Le titre déjà résolu à l'écran (alias trouvé, ou titre principal si
       // aucun alias ne correspondait mieux) devient le titre personnel de
@@ -80,13 +96,32 @@ export default function ChercherPage() {
       // recherche partielle ou mal orthographiée. Le backend ignore de
       // toute façon silencieusement cette valeur si elle correspond déjà
       // au titre canonique.
-      await libraryService.add({ manhwaId, status: "plan_to_read", customTitle: displayTitle });
-      setAdded((prev) => new Set(prev).add(manhwaId));
+      await libraryService.add({ manhwaId: manhwa._id, status: "plan_to_read", customTitle: displayTitle });
+      setAdded((prev) => new Set(prev).add(manhwa._id));
       toast.success(t.added);
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        setAdded((prev) => new Set(prev).add(manhwaId));
+        setAdded((prev) => new Set(prev).add(manhwa._id));
         toast.info(t.alreadyAdded);
+        // Déjà dans la bibliothèque — probablement ajoutée avant que cette
+        // fonctionnalité existe, ou lors d'une recherche précédente qui ne
+        // trouvait pas encore le bon alias. Un second clic depuis une
+        // recherche qui, elle, résout maintenant un alias différent doit
+        // quand même le faire remonter, plutôt que de laisser l'entrée
+        // figée sur le titre principal indéfiniment. Rien à faire si le
+        // titre résolu est simplement le titre principal (aucun meilleur
+        // alias trouvé) : ce serait un aller-retour pour ne rien changer.
+        if (displayTitle !== manhwa.title) {
+          try {
+            const existing = await libraryService.findByManhwa(manhwa._id);
+            if (existing && existing.customTitle !== displayTitle) {
+              await libraryService.update(existing._id, { customTitle: displayTitle });
+            }
+          } catch {
+            // Silencieux : l'ajout est déjà acquis, ce n'est qu'un
+            // rattrapage de confort sur le titre affiché.
+          }
+        }
       } else {
         toast.error(t.addError);
       }
@@ -151,7 +186,7 @@ export default function ChercherPage() {
                     {m.totalChapters ? ` · ${m.totalChapters} ch.` : ""}
                   </p>
                   <button
-                    onClick={() => handleAdd(m._id, displayTitle)}
+                    onClick={() => handleAdd(m, displayTitle)}
                     disabled={adding === m._id || isAdded}
                     className="flex items-center justify-center gap-1.5 text-[12.5px] font-medium rounded-lg py-1.5 bg-vert-t text-vert hover:bg-vert hover:text-[#05130c] transition-colors disabled:opacity-60"
                   >
