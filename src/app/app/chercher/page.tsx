@@ -12,6 +12,40 @@ import { useTranslations } from "@/lib/i18n/useTranslations";
 import type { Manhwa } from "@/types";
 import { Search as SearchIcon, Plus, Check } from "lucide-react";
 
+// Normalisation légère, côté client : pas besoin de reproduire exactement
+// `normalizeTitle()` du backend ici — juste assez pour comparer titre et
+// alias de façon insensible à la casse et aux espaces superflus.
+function normalize(value: string): string {
+  return value.toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+/**
+ * Quel titre afficher sur CETTE carte, pour CETTE recherche : si la requête
+ * correspond mieux à un alias qu'au titre principal, l'alias tapé prend sa
+ * place à l'écran — rien n'est enregistré, ça ne change que l'affichage
+ * pendant que l'utilisateur regarde ses résultats. Le titre personnel
+ * (sauvegardé, lui, à l'ajout) est une fonctionnalité séparée.
+ */
+function matchedDisplayTitle(manhwa: Manhwa, query: string): string {
+  const q = normalize(query);
+  if (!q || !manhwa.altTitles?.length) return manhwa.title;
+  if (normalize(manhwa.title).startsWith(q)) return manhwa.title;
+
+  const exact = manhwa.altTitles.find((alt) => normalize(alt) === q);
+  if (exact) return exact;
+
+  const prefixed = manhwa.altTitles
+    .filter((alt) => normalize(alt).startsWith(q))
+    .sort((a, b) => a.length - b.length)[0];
+  if (prefixed) return prefixed;
+
+  const contained = manhwa.altTitles
+    .filter((alt) => normalize(alt).includes(q))
+    .sort((a, b) => a.length - b.length)[0];
+
+  return contained ?? manhwa.title;
+}
+
 export default function ChercherPage() {
   const t = useTranslations("search");
   const publicationStatus = useTranslations("common").publicationStatus;
@@ -37,14 +71,16 @@ export default function ChercherPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  async function handleAdd(manhwaId: string) {
+  async function handleAdd(manhwaId: string, displayTitle: string) {
     setAdding(manhwaId);
     try {
-      // Le terme tapé devient le titre personnel de l'entrée si l'ajout se
-      // fait via un alias plutôt que le titre principal — le backend
-      // ignore silencieusement cette valeur si elle correspond déjà au
-      // titre canonique, pas la peine de vérifier ça ici aussi.
-      await libraryService.add({ manhwaId, status: "plan_to_read", customTitle: q.trim() || undefined });
+      // Le titre déjà résolu à l'écran (alias trouvé, ou titre principal si
+      // aucun alias ne correspondait mieux) devient le titre personnel de
+      // l'entrée — plus fiable que le texte brut tapé, qui peut être une
+      // recherche partielle ou mal orthographiée. Le backend ignore de
+      // toute façon silencieusement cette valeur si elle correspond déjà
+      // au titre canonique.
+      await libraryService.add({ manhwaId, status: "plan_to_read", customTitle: displayTitle });
       setAdded((prev) => new Set(prev).add(manhwaId));
       toast.success(t.added);
     } catch (e) {
@@ -95,6 +131,7 @@ export default function ChercherPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {results.map((m) => {
             const isAdded = added.has(m._id);
+            const displayTitle = matchedDisplayTitle(m, q);
             return (
               <div
                 key={m._id}
@@ -106,7 +143,7 @@ export default function ChercherPage() {
                 <div className="p-3 flex flex-col gap-2 flex-1">
                   <Link href={`/app/manhwa/${m.slug}`}>
                     <h3 className="text-[13.5px] font-medium leading-snug line-clamp-2 hover:text-vert transition-colors">
-                      {m.title}
+                      {displayTitle}
                     </h3>
                   </Link>
                   <p className="text-[11px] text-txt3 font-mono mt-auto">
@@ -114,7 +151,7 @@ export default function ChercherPage() {
                     {m.totalChapters ? ` · ${m.totalChapters} ch.` : ""}
                   </p>
                   <button
-                    onClick={() => handleAdd(m._id)}
+                    onClick={() => handleAdd(m._id, displayTitle)}
                     disabled={adding === m._id || isAdded}
                     className="flex items-center justify-center gap-1.5 text-[12.5px] font-medium rounded-lg py-1.5 bg-vert-t text-vert hover:bg-vert hover:text-[#05130c] transition-colors disabled:opacity-60"
                   >
