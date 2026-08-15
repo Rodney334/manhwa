@@ -253,7 +253,12 @@ export default function FichePage() {
     }
   }
 
-  if (!manhwa) {
+  // `entry === undefined` (pas encore résolu) fait volontairement partie de
+  // la condition, pas seulement `!manhwa` : sinon la page s'affiche dès que
+  // la fiche est prête, avec `entry` encore en cours de chargement — le titre
+  // canonique apparaît un instant à la place du titre personnel, qui ne
+  // prend sa place qu'au second appel réseau, quelques instants plus tard.
+  if (!manhwa || entry === undefined) {
     return (
       <div className="flex justify-center py-24">
         <Spinner />
@@ -333,12 +338,6 @@ export default function FichePage() {
       </div>
 
       <div className="border-t border-ligne pt-5">
-        {entry === undefined && (
-          <div className="flex justify-center py-6">
-            <Spinner />
-          </div>
-        )}
-
         {entry === null && (
           <button
             onClick={handleAdd}
