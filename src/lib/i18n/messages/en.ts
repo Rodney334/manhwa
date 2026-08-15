@@ -327,6 +327,8 @@ const en = {
     rateAria: "Rate {n}/10",
     yourNotes: "Your notes",
     notesPlaceholder: "Resume after the tower arc…",
+    yourTitle: "Your title for this series",
+    yourTitlePlaceholder: "Leave empty to keep the main title",
     nextChapterAria: "Next chapter",
     prevChapterAria: "Previous chapter",
     aliases: {

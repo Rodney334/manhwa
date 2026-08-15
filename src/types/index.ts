@@ -83,6 +83,10 @@ export interface LibraryEntry {
   currentVolume?: number;
   score?: number;
   notes?: string;
+  // Titre visible seulement par ce lecteur — pas de répercussion sur la
+  // fiche partagée. Rempli automatiquement quand l'ajout se fait via un
+  // titre alternatif plutôt que le titre principal.
+  customTitle?: string;
   isFavorite: boolean;
   notifyOnNewChapter: boolean;
   startedAt?: string;

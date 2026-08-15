@@ -98,14 +98,24 @@ export const libraryService = {
     return api.get<LibraryEntry>(`/api/v1/library/${id}`);
   },
 
-  async add(data: { manhwaId?: string; provider?: string; externalId?: string; status?: ReadingStatus }) {
+  async add(data: {
+    manhwaId?: string;
+    provider?: string;
+    externalId?: string;
+    status?: ReadingStatus;
+    customTitle?: string;
+  }) {
     const res = await api.post<{ message: string; entry: LibraryEntry }>("/api/v1/library/", data);
     return res.entry;
   },
 
   async update(
     id: string,
-    data: Partial<Pick<LibraryEntry, "status" | "score" | "notes" | "isFavorite" | "notifyOnNewChapter" | "currentVolume">>,
+    data: Partial<
+      Pick<LibraryEntry, "status" | "score" | "notes" | "isFavorite" | "notifyOnNewChapter" | "currentVolume"> & {
+        customTitle: string | null;
+      }
+    >,
   ) {
     const res = await api.patch<{ message: string; entry: LibraryEntry }>(`/api/v1/library/${id}`, data);
     return res.entry;

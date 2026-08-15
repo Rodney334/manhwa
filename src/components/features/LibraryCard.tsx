@@ -30,7 +30,7 @@ export function ContinueCard({
         <div>
           <Link href={`/app/manhwa/${entry.manhwa.slug}`}>
             <h3 className="font-medium text-[14.5px] truncate hover:text-vert transition-colors">
-              {entry.manhwa.title}
+              {entry.customTitle ?? entry.manhwa.title}
             </h3>
           </Link>
           <p className="text-[12.5px] text-txt3 font-mono mt-0.5">
@@ -68,7 +68,7 @@ export function LibraryCard({ entry, statusLabel }: { entry: LibraryEntry; statu
       </div>
       <div className="p-3 flex flex-col gap-1.5">
         <h3 className="text-[13.5px] font-medium leading-snug line-clamp-2 group-hover:text-vert transition-colors">
-          {entry.manhwa.title}
+          {entry.customTitle ?? entry.manhwa.title}
         </h3>
         <div className="flex items-center justify-between text-[11.5px] text-txt3 font-mono">
           <span>ch. {formatChapter(entry.currentChapter)}</span>

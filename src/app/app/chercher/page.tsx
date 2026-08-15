@@ -40,7 +40,11 @@ export default function ChercherPage() {
   async function handleAdd(manhwaId: string) {
     setAdding(manhwaId);
     try {
-      await libraryService.add({ manhwaId, status: "plan_to_read" });
+      // Le terme tapé devient le titre personnel de l'entrée si l'ajout se
+      // fait via un alias plutôt que le titre principal — le backend
+      // ignore silencieusement cette valeur si elle correspond déjà au
+      // titre canonique, pas la peine de vérifier ça ici aussi.
+      await libraryService.add({ manhwaId, status: "plan_to_read", customTitle: q.trim() || undefined });
       setAdded((prev) => new Set(prev).add(manhwaId));
       toast.success(t.added);
     } catch (e) {

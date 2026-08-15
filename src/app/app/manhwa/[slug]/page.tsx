@@ -52,6 +52,7 @@ export default function FichePage() {
   const [entry, setEntry] = useState<LibraryEntry | null | undefined>(undefined);
   const [chapterInput, setChapterInput] = useState("");
   const [notesInput, setNotesInput] = useState("");
+  const [customTitleInput, setCustomTitleInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [dropOff, setDropOff] = useState<DropOffStats | null>(null);
 
@@ -65,6 +66,7 @@ export default function FichePage() {
         if (found) {
           setChapterInput(String(found.currentChapter ?? 0));
           setNotesInput(found.notes ?? "");
+          setCustomTitleInput(found.customTitle ?? "");
         }
       } catch {
         setEntry(null);
@@ -219,6 +221,24 @@ export default function FichePage() {
     }
   }
 
+  // `null` explicite (pas `undefined`) quand le champ est vidé : c'est ce
+  // que le backend interprète comme « efface le titre personnel », par
+  // opposition à « n'y touche pas » — cf. commentaire côté service.
+  async function handleCustomTitleSubmit() {
+    if (!entry) return;
+    const trimmed = customTitleInput.trim();
+    if (trimmed === (entry.customTitle ?? "")) return;
+    try {
+      const updated = await libraryService.update(entry._id, {
+        customTitle: trimmed.length > 0 ? trimmed : null,
+      });
+      setEntry(updated);
+      setCustomTitleInput(updated.customTitle ?? "");
+    } catch {
+      toast.error(t.notesSaveError);
+    }
+  }
+
   async function handleRemove() {
     if (!entry) return;
     setBusy(true);
@@ -258,6 +278,9 @@ export default function FichePage() {
             <h1 className="font-display text-[26px] font-normal leading-tight">{manhwa.title}</h1>
             {manhwa.altTitles && manhwa.altTitles.length > 0 && (
               <p className="text-[12.5px] text-txt3 mt-1">{manhwa.altTitles.join(" · ")}</p>
+            )}
+            {entry?.customTitle && (
+              <p className="text-[12.5px] text-vert mt-1">{t.yourTitle} : {entry.customTitle}</p>
             )}
           </div>
 
@@ -415,6 +438,19 @@ export default function FichePage() {
                 ) : null}
               </div>
             </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[12px] text-txt3">{t.yourTitle}</span>
+              <input
+                type="text"
+                value={customTitleInput}
+                onChange={(e) => setCustomTitleInput(e.target.value)}
+                onBlur={handleCustomTitleSubmit}
+                maxLength={200}
+                placeholder={t.yourTitlePlaceholder}
+                className="bg-sur border border-ligne rounded-lg px-3.5 py-2.5 text-[13px] outline-none focus:border-vert/50 transition-colors"
+              />
+            </label>
 
             <label className="flex flex-col gap-1.5">
               <span className="text-[12px] text-txt3">{t.yourNotes}</span>

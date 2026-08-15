@@ -327,6 +327,8 @@ const fr = {
     rateAria: "Noter {n}/10",
     yourNotes: "Tes notes",
     notesPlaceholder: "Reprendre après l'arc de la tour…",
+    yourTitle: "Ton titre pour cette série",
+    yourTitlePlaceholder: "Laisse vide pour garder le titre principal",
     nextChapterAria: "Chapitre suivant",
     prevChapterAria: "Chapitre précédent",
     aliases: {
