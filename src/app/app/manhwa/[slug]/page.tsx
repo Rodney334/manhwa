@@ -275,12 +275,17 @@ export default function FichePage() {
 
         <div className="flex-1 flex flex-col gap-3">
           <div>
-            <h1 className="font-display text-[26px] font-normal leading-tight">{manhwa.title}</h1>
+            <h1 className="font-display text-[26px] font-normal leading-tight">
+              {entry?.customTitle ?? manhwa.title}
+            </h1>
+            {/* Le titre principal reste visible dès qu'un titre personnel
+                prend la place du H1 — sans ça, plus aucune trace du nom
+                "officiel" de la fiche sur cette page. */}
+            {entry?.customTitle && (
+              <p className="text-[12.5px] text-txt3 mt-1">{manhwa.title}</p>
+            )}
             {manhwa.altTitles && manhwa.altTitles.length > 0 && (
               <p className="text-[12.5px] text-txt3 mt-1">{manhwa.altTitles.join(" · ")}</p>
-            )}
-            {entry?.customTitle && (
-              <p className="text-[12.5px] text-vert mt-1">{t.yourTitle} : {entry.customTitle}</p>
             )}
           </div>
 
