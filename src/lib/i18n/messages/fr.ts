@@ -331,6 +331,7 @@ const fr = {
     yourTitlePlaceholder: "Laisse vide pour garder le titre principal",
     nextChapterAria: "Chapitre suivant",
     prevChapterAria: "Chapitre précédent",
+    chapterCountNotice: "Ce nombre peut ne pas être à jour. Si tu es plus avancé·e, indique ton vrai chapitre — il sera accepté et corrigera la fiche automatiquement.",
     aliases: {
       title: "Admin — titres alternatifs",
       placeholder: "ORV, Omniscient Reader's Viewpoint, 전지적 독자 시점",

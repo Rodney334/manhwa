@@ -418,6 +418,8 @@ export default function FichePage() {
               </button>
             </div>
 
+            <p className="text-[11px] text-txt3 -mt-1 max-w-md">{t.chapterCountNotice}</p>
+
             <div className="flex flex-col gap-2">
               <span className="text-[12px] text-txt3">{t.yourScore}</span>
               <div className="flex items-center gap-1">
