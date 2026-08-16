@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { manhwaService } from "@/lib/services/manhwa.service";
 import { libraryService } from "@/lib/services/library.service";
@@ -63,9 +64,23 @@ function matchedDisplayTitle(manhwa: Manhwa, query: string): string {
 }
 
 export default function ChercherPage() {
+  // `useSearchParams()` (lecture du `?q=` posé par la barre de recherche de
+  // la Topbar) exige une frontière Suspense en Next 15.
+  return (
+    <Suspense fallback={<div className="flex justify-center py-20"><Spinner /></div>}>
+      <ChercherContent />
+    </Suspense>
+  );
+}
+
+function ChercherContent() {
   const t = useTranslations("search");
   const publicationStatus = useTranslations("common").publicationStatus;
-  const [q, setQ] = useState("");
+  const searchParams = useSearchParams();
+  // Pré-rempli si on arrive depuis la barre de la Topbar (`?q=...`) — la
+  // recherche se lance alors toute seule via le `useEffect` juste en
+  // dessous, sans que l'utilisateur ait à retaper ce qu'il vient d'écrire.
+  const [q, setQ] = useState(() => searchParams.get("q") ?? "");
   const [results, setResults] = useState<Manhwa[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);

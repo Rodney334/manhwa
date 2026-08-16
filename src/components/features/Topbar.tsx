@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { Search, Bell, Menu } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { useNotificationsStore } from "@/lib/stores/notifications.store";
@@ -13,6 +13,13 @@ import { useTranslations } from "@/lib/i18n/useTranslations";
 export function Topbar() {
   const t = useTranslations("topbar");
   const router = useRouter();
+  const pathname = usePathname();
+  // Sur la page Recherche elle-même, cette barre ferait doublon avec le
+  // champ de la page — deux champs de recherche empilés à l'écran, dont un
+  // qui ne servirait à rien puisqu'on y est déjà. On la masque plutôt que
+  // de la dédoubler.
+  const isSearchPage = pathname === "/app/chercher";
+  const [query, setQuery] = useState("");
   const isAdmin = useAuthStore((s) => s.user?.role === "admin");
   const notifCount = useNotificationsStore((s) => s.unreadCount);
   const setUnreadCount = useNotificationsStore((s) => s.setUnreadCount);
@@ -26,6 +33,17 @@ export function Topbar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = query.trim();
+    // La query part directement dans l'URL — la page Recherche la lit au
+    // chargement et lance la recherche toute seule (cf. chercher/page.tsx).
+    // Pas de recherche à chaque frappe ici : ça enverrait une navigation à
+    // chaque lettre tapée, pour un gain qu'Entrée couvre très bien.
+    router.push(trimmed ? `/app/chercher?q=${encodeURIComponent(trimmed)}` : "/app/chercher");
+    setQuery("");
+  }
+
   return (
     <div className="flex items-center gap-3 px-5 lg:px-8 h-16 border-b border-ligne bg-fond/80 backdrop-blur sticky top-0 z-20">
       <button
@@ -36,16 +54,23 @@ export function Topbar() {
         <Menu size={17} />
       </button>
 
-      <button
-        onClick={() => router.push("/app/chercher")}
-        className="flex items-center gap-2 text-[13px] text-txt3 bg-sur border border-ligne rounded-lg px-3 py-2 w-full max-w-[360px] hover:border-ligne2 transition-colors"
-      >
-        <Search size={14} />
-        <span className="flex-1 text-left">{t.searchPlaceholder}</span>
-        <kbd className="text-[10px] font-mono text-txt3 border border-ligne rounded px-1.5 py-0.5">
-          ⌘K
-        </kbd>
-      </button>
+      {!isSearchPage && (
+        <form
+          onSubmit={handleSearchSubmit}
+          className="flex items-center gap-2 text-[13px] text-txt3 bg-sur border border-ligne rounded-lg px-3 py-2 w-full max-w-[360px] hover:border-ligne2 focus-within:border-vert/50 transition-colors"
+        >
+          <Search size={14} className="shrink-0" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t.searchPlaceholder}
+            className="flex-1 bg-transparent outline-none text-txt placeholder:text-txt3 min-w-0"
+          />
+          <kbd className="text-[10px] font-mono text-txt3 border border-ligne rounded px-1.5 py-0.5 shrink-0">
+            ⌘K
+          </kbd>
+        </form>
+      )}
 
       <div className="ml-auto flex items-center gap-2">
         <LanguageSwitcher />
