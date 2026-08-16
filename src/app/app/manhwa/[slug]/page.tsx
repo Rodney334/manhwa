@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { manhwaService, type DropOffStats } from "@/lib/services/manhwa.service";
 import { libraryService } from "@/lib/services/library.service";
 import { Cover } from "@/components/features/Cover";
@@ -42,11 +42,29 @@ function renderBold(text: string, boldClassName: string): React.ReactNode {
 }
 
 export default function FichePage() {
+  // `useSearchParams()` (lecture du paramètre `?display=`, cf. plus bas)
+  // exige une frontière Suspense en Next 15, sinon la page est forcée en
+  // rendu client complet au build.
+  return (
+    <Suspense fallback={<div className="flex justify-center py-24"><Spinner /></div>}>
+      <FicheContent />
+    </Suspense>
+  );
+}
+
+function FicheContent() {
   const t = useTranslations("manhwaDetail");
   const readingStatus = useTranslations("common").readingStatus;
   const publicationStatus = useTranslations("common").publicationStatus;
   const params = useParams<{ slug: string }>();
   const router = useRouter();
+  // Alias résolu depuis la recherche (`?display=...`), posé dans l'URL par
+  // `chercher/page.tsx` quand on clique sur l'image/le titre d'un résultat
+  // plutôt que sur son bouton "Ajouter" — sinon cet alias n'a nulle part où
+  // survivre le temps de la navigation, et l'ajout depuis cette page
+  // retomberait silencieusement sur le titre canonique.
+  const searchParams = useSearchParams();
+  const displayTitleFromSearch = searchParams.get("display");
   const isAdmin = useAuthStore((s) => s.user?.role === "admin");
   const [manhwa, setManhwa] = useState<Manhwa | null>(null);
   const [entry, setEntry] = useState<LibraryEntry | null | undefined>(undefined);
@@ -96,9 +114,18 @@ export default function FichePage() {
     if (!manhwa) return;
     setBusy(true);
     try {
-      const newEntry = await libraryService.add({ manhwaId: manhwa._id, status: "plan_to_read" });
+      const resolvedTitle =
+        displayTitleFromSearch && displayTitleFromSearch !== manhwa.title
+          ? displayTitleFromSearch
+          : undefined;
+      const newEntry = await libraryService.add({
+        manhwaId: manhwa._id,
+        status: "plan_to_read",
+        ...(resolvedTitle ? { customTitle: resolvedTitle } : {}),
+      });
       setEntry(newEntry);
       setChapterInput(String(newEntry.currentChapter ?? 0));
+      setCustomTitleInput(newEntry.customTitle ?? "");
       toast.success(t.addedToLibrary);
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : t.addError);

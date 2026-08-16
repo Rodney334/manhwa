@@ -167,16 +167,28 @@ export default function ChercherPage() {
           {results.map((m) => {
             const isAdded = added.has(m._id);
             const displayTitle = matchedDisplayTitle(m, q);
+            // Le lien vers la fiche doit porter le même alias déjà résolu à
+            // l'écran — sinon un clic sur l'image/le titre (au lieu du
+            // bouton "Ajouter" juste en dessous) atterrit sur la fiche sans
+            // aucune trace de l'alias qui a permis de la trouver, et
+            // l'ajout depuis là-bas retombe silencieusement sur le titre
+            // canonique. Rien à passer quand l'alias EST le titre canonique
+            // (aucune résolution n'a eu lieu, la query string resterait
+            // propre).
+            const detailHref =
+              displayTitle !== m.title
+                ? `/app/manhwa/${m.slug}?display=${encodeURIComponent(displayTitle)}`
+                : `/app/manhwa/${m.slug}`;
             return (
               <div
                 key={m._id}
                 className="group flex flex-col rounded-xl border border-ligne bg-sur/60 overflow-hidden hover:border-vert/30 transition-colors"
               >
-                <Link href={`/app/manhwa/${m.slug}`} className="relative aspect-[3/4] block">
+                <Link href={detailHref} className="relative aspect-[3/4] block">
                   <Cover manhwa={m} className="w-full h-full" />
                 </Link>
                 <div className="p-3 flex flex-col gap-2 flex-1">
-                  <Link href={`/app/manhwa/${m.slug}`}>
+                  <Link href={detailHref}>
                     <h3 className="text-[13.5px] font-medium leading-snug line-clamp-2 hover:text-vert transition-colors">
                       {displayTitle}
                     </h3>
