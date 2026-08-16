@@ -169,6 +169,13 @@ function FicheContent() {
         const updated = await libraryService.increment(entry._id, step);
         setEntry(updated);
         setChapterInput(String(updated.currentChapter ?? 0));
+        // Le backend corrige `totalChapters` en base dès qu'on dépasse le
+        // dernier chapitre connu (cf. `setProgress` côté service) — et le
+        // renvoie déjà à jour dans `updated.manhwa`. Sans cette ligne, l'en-tête
+        // de la fiche ("Terminé · 75 chapitres") reste sur l'ancien total
+        // capturé au chargement de la page, alors que la progression, elle,
+        // affiche déjà la bonne valeur : les deux se contredisent à l'écran.
+        setManhwa(updated.manhwa);
         return;
       }
 
@@ -176,6 +183,7 @@ function FicheContent() {
       const updated = await libraryService.updateProgress(entry._id, nextChapter);
       setEntry(updated);
       setChapterInput(String(updated.currentChapter ?? 0));
+      setManhwa(updated.manhwa);
     } catch {
       toast.error(t.updateError);
     } finally {
@@ -196,6 +204,7 @@ function FicheContent() {
       const updated = await libraryService.updateProgress(entry._id, value);
       setEntry(updated);
       setChapterInput(String(updated.currentChapter ?? 0));
+      setManhwa(updated.manhwa);
       toast.success(t.progressSaved);
     } catch {
       toast.error(t.updateError);
