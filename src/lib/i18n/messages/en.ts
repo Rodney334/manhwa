@@ -91,6 +91,11 @@ const en = {
   auth: {
     showPassword: "Show password",
     hidePassword: "Hide password",
+    passwordRequirements: {
+      length: "At least 8 characters",
+      letter: "At least one letter",
+      digit: "At least one digit",
+    },
     login: {
       title: "Log in",
       subtitle: "Your username or your email, whichever you like.",

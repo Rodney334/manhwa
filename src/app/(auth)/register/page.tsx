@@ -9,6 +9,7 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { toast } from "@/lib/stores/toast.store";
 import { useTranslations } from "@/lib/i18n/useTranslations";
 import type { Messages } from "@/lib/i18n/messages/fr";
+import { PasswordRequirements } from "@/components/features/PasswordRequirements";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 
 // Le backend renvoie déjà un message précis (« Lettres, chiffres et tiret
@@ -103,13 +104,16 @@ function RegisterForm() {
           type="email"
           placeholder={t.register.emailPlaceholder}
         />
-        <Field
-          label={t.register.passwordLabel}
-          value={password}
-          onChange={setPassword}
-          type="password"
-          placeholder="••••••••"
-        />
+        <div className="flex flex-col gap-1.5">
+          <Field
+            label={t.register.passwordLabel}
+            value={password}
+            onChange={setPassword}
+            type="password"
+            placeholder="••••••••"
+          />
+          <PasswordRequirements password={password} />
+        </div>
 
         {error && <p className="text-[12.5px] text-rouge">{error}</p>}
 

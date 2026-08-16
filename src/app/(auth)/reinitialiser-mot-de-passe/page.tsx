@@ -7,6 +7,7 @@ import { authService } from "@/lib/services/auth.service";
 import { ApiError } from "@/lib/api/client";
 import { toast } from "@/lib/stores/toast.store";
 import { useTranslations } from "@/lib/i18n/useTranslations";
+import { PasswordRequirements } from "@/components/features/PasswordRequirements";
 import { Loader2 } from "lucide-react";
 
 export default function ResetPasswordPage() {
@@ -72,7 +73,7 @@ export default function ResetPasswordPage() {
             className="bg-sur border border-ligne rounded-lg px-3.5 py-2.5 text-[13.5px] outline-none focus:border-vert/50 transition-colors"
           />
         </label>
-        <p className="text-[11.5px] text-txt3 -mt-2">{t.passwordHint}</p>
+        <PasswordRequirements password={password} />
 
         {error && <p className="text-[12.5px] text-rouge">{error}</p>}
         <button

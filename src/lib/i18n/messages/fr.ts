@@ -91,6 +91,11 @@ const fr = {
   auth: {
     showPassword: "Afficher le mot de passe",
     hidePassword: "Masquer le mot de passe",
+    passwordRequirements: {
+      length: "Au moins 8 caractères",
+      letter: "Au moins une lettre",
+      digit: "Au moins un chiffre",
+    },
     login: {
       title: "Connexion",
       subtitle: "Ton pseudo ou ton adresse, peu importe lequel.",

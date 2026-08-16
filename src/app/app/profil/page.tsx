@@ -12,6 +12,7 @@ import type { Messages } from "@/lib/i18n/messages/fr";
 import { Loader2, TriangleAlert, Smartphone, HelpCircle } from "lucide-react";
 import type { User } from "@/types";
 import { InstallButton } from "@/components/features/InstallButton";
+import { PasswordRequirements } from "@/components/features/PasswordRequirements";
 import { useOnboardingStore } from "@/lib/stores/onboarding.store";
 
 export default function ProfilPage() {
@@ -234,6 +235,7 @@ function PasswordForm({ t }: { t: Messages["profile"]["password"] }) {
         type="password"
         minLength={8}
       />
+      <PasswordRequirements password={newPassword} />
 
       <button
         type="submit"
