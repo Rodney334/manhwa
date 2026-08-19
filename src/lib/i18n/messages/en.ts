@@ -592,6 +592,18 @@ const en = {
       deleted: "Account deleted.",
       deleteError: "Couldn't delete the account.",
       deleteAccount: "Delete this account",
+      submissionsHeading: "Submission history",
+      submissionsLoadError: "Couldn't load submissions.",
+      submissionsEmpty: "No submissions",
+      submissionStillInCatalog: "still in catalog",
+      submissionApprovedCounter: "approved (counter)",
+      submissionDriftWarning:
+        "The \"approved\" counter ({approved}) is higher than the number of entries still in the catalog ({inCatalog}) — at least one approved entry has since been deleted.",
+      submissionProposedOn: "submitted {relative}",
+      moderationPending: "Pending",
+      moderationApproved: "Approved",
+      moderationRejected: "Rejected",
+      moderationMerged: "Merged",
     },
     moderation: {
       title: "Moderation",

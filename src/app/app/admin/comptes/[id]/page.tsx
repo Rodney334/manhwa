@@ -12,7 +12,19 @@ import { ApiError } from "@/lib/api/client";
 import { useTranslations } from "@/lib/i18n/useTranslations";
 import { useLocaleStore } from "@/lib/i18n/store";
 import type { LibraryEntry, User } from "@/types";
-import { ArrowLeft, BookOpen, Trash2 } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, Trash2 } from "lucide-react";
+
+interface Submission {
+  _id: string;
+  title: string;
+  slug: string;
+  coverPath?: string;
+  moderationStatus: string;
+  source: string;
+  rejectionReason?: string;
+  createdAt: string;
+  reviewedAt?: string;
+}
 
 export default function AdminUserDetailPage() {
   const t = useTranslations("admin").accountDetail;
@@ -24,7 +36,21 @@ export default function AdminUserDetailPage() {
   const [user, setUser] = useState<User | null>(null);
   const [library, setLibrary] = useState<LibraryEntry[] | null>(null);
   const [libraryLoaded, setLibraryLoaded] = useState(false);
+  const [submissions, setSubmissions] = useState<Submission[] | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const moderationLabels: Record<string, string> = {
+    pending: t.moderationPending,
+    approved: t.moderationApproved,
+    rejected: t.moderationRejected,
+    merged: t.moderationMerged,
+  };
+  const moderationBadge: Record<string, string> = {
+    pending: "on_hold",
+    approved: "reading",
+    rejected: "dropped",
+    merged: "plan_to_read",
+  };
 
   const loadUser = useCallback(async () => {
     try {
@@ -39,6 +65,17 @@ export default function AdminUserDetailPage() {
   useEffect(() => {
     loadUser();
   }, [loadUser]);
+
+  useEffect(() => {
+    adminService
+      .userSubmissions(params.id, { pageSize: 50 })
+      .then((res) => setSubmissions(res.items))
+      .catch(() => {
+        toast.error(t.submissionsLoadError);
+        setSubmissions([]);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id]);
 
   // Consultation volontairement manuelle (pas au chargement) : chaque appel
   // est tracé dans le journal d'audit côté backend avec le motif fourni.
@@ -81,6 +118,10 @@ export default function AdminUserDetailPage() {
       </div>
     );
   }
+
+  const approvedStillInCatalog =
+    submissions?.filter((s) => s.moderationStatus === "approved").length ?? 0;
+  const approvedCounter = user.contributionStats?.approved ?? 0;
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
@@ -125,11 +166,70 @@ export default function AdminUserDetailPage() {
           <div className="flex gap-4 text-[12px] text-txt3 font-mono pt-1 border-t border-ligne mt-1">
             <span>{t.contributionsSubmitted.replace("{n}", String(user.contributionStats.submitted))}</span>
             <span className="text-vert">
-              {t.contributionsApproved.replace("{n}", String(user.contributionStats.approved))}
+              {t.contributionsApproved.replace("{n}", String(approvedCounter))}
             </span>
             <span className="text-rouge">
               {t.contributionsRejected.replace("{n}", String(user.contributionStats.rejected))}
             </span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Historique des propositions ─────────────────────────────── */}
+      <div className="flex flex-col gap-3">
+        <h2 className="font-display text-[17px] font-normal">{t.submissionsHeading}</h2>
+
+        {approvedStillInCatalog < approvedCounter && (
+          <div className="rounded-xl border border-or/30 bg-or-t px-4 py-3 text-[12.5px] text-txt2">
+            {t.submissionDriftWarning
+              .replace("{approved}", String(approvedCounter))
+              .replace("{inCatalog}", String(approvedStillInCatalog))}
+          </div>
+        )}
+
+        {submissions === null && (
+          <div className="flex justify-center py-8">
+            <Spinner />
+          </div>
+        )}
+
+        {submissions !== null && submissions.length === 0 && (
+          <EmptyState icon={<FileText size={22} />} title={t.submissionsEmpty} />
+        )}
+
+        {submissions !== null && submissions.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {submissions.map((s) => (
+              <div
+                key={s._id}
+                className="flex items-center gap-3 rounded-xl border border-ligne bg-sur/60 px-4 py-3"
+              >
+                <Cover
+                  manhwa={{ title: s.title, coverPath: s.coverPath }}
+                  className="w-9 h-12 rounded-md shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  {s.moderationStatus === "approved" ? (
+                    <Link
+                      href={`/app/manhwa/${s.slug}`}
+                      className="text-[13px] font-medium hover:text-vert transition-colors truncate block"
+                    >
+                      {s.title}
+                    </Link>
+                  ) : (
+                    <p className="text-[13px] font-medium truncate">{s.title}</p>
+                  )}
+                  <p className="text-[11px] text-txt3 font-mono mt-0.5" suppressHydrationWarning>
+                    {t.submissionProposedOn.replace("{relative}", formatRelative(s.createdAt, locale))}
+                    {s.rejectionReason ? ` · ${s.rejectionReason}` : ""}
+                  </p>
+                </div>
+                <StatusBadge
+                  status={moderationBadge[s.moderationStatus] ?? "plan_to_read"}
+                  label={moderationLabels[s.moderationStatus] ?? s.moderationStatus}
+                />
+              </div>
+            ))}
           </div>
         )}
       </div>

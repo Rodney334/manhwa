@@ -140,6 +140,21 @@ export const adminService = {
   userLibrary(id: string, params?: { page?: number; pageSize?: number; reason?: string }) {
     return api.get<PaginatedResponse<LibraryEntry>>(`/api/v1/admin/users/${id}/library`, { params });
   },
+  userSubmissions(id: string, params?: { page?: number; pageSize?: number }) {
+    return api.get<
+      PaginatedResponse<{
+        _id: string;
+        title: string;
+        slug: string;
+        coverPath?: string;
+        moderationStatus: string;
+        source: string;
+        rejectionReason?: string;
+        createdAt: string;
+        reviewedAt?: string;
+      }>
+    >(`/api/v1/admin/users/${id}/submissions`, { params });
+  },
   // NOTE : le backend ne renvoie PAS le compte mis à jour ici, seulement un
   // message de confirmation. Le front doit mettre à jour son état localement.
   setUserStatus(id: string, status: AccountStatus, reason: string) {

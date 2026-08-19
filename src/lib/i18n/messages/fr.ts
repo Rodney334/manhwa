@@ -592,6 +592,18 @@ const fr = {
       deleted: "Compte supprimé.",
       deleteError: "Échec de la suppression.",
       deleteAccount: "Supprimer ce compte",
+      submissionsHeading: "Historique des propositions",
+      submissionsLoadError: "Impossible de charger les propositions.",
+      submissionsEmpty: "Aucune proposition",
+      submissionStillInCatalog: "encore au catalogue",
+      submissionApprovedCounter: "validées (compteur)",
+      submissionDriftWarning:
+        "Le compteur « validées » ({approved}) est supérieur au nombre de fiches encore présentes au catalogue ({inCatalog}) — au moins une fiche validée a été supprimée depuis.",
+      submissionProposedOn: "proposée {relative}",
+      moderationPending: "En attente",
+      moderationApproved: "Validée",
+      moderationRejected: "Refusée",
+      moderationMerged: "Fusionnée",
     },
     moderation: {
       title: "Modération",
