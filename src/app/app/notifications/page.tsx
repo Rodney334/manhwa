@@ -12,7 +12,7 @@ import { useTranslations } from "@/lib/i18n/useTranslations";
 import { useLocaleStore } from "@/lib/i18n/store";
 import type { Messages } from "@/lib/i18n/messages/fr";
 import type { Notification, NotificationManhwaRef } from "@/types";
-import { Bell, CheckCheck, Sparkles, RefreshCcw, Check, X, ShieldAlert, Info } from "lucide-react";
+import { Bell, CheckCheck, Sparkles, RefreshCcw, Check, X, ShieldAlert, Info, PartyPopper } from "lucide-react";
 
 function getManhwaRef(n: Notification): NotificationManhwaRef | null {
   return n.manhwaId && typeof n.manhwaId === "object" ? n.manhwaId : null;
@@ -25,6 +25,7 @@ const TYPE_ICON: Record<string, React.ElementType> = {
   submission_rejected: X,
   account_action: ShieldAlert,
   system: Info,
+  wrapped_ready: PartyPopper,
 };
 
 /** Construit un titre + message lisibles à partir du type et du payload —
@@ -63,6 +64,11 @@ function describeNotification(
       return {
         title: t.accountActionTitle,
         message: p.message ?? t.accountActionMessage,
+      };
+    case "wrapped_ready":
+      return {
+        title: t.wrappedReadyTitle,
+        message: t.wrappedReadyMessage,
       };
     case "system":
     default:
@@ -185,6 +191,14 @@ export default function NotificationsPage() {
               <Link
                 key={n._id}
                 href={`/app/manhwa/${manhwa.slug}`}
+                onClick={() => !n.isRead && handleMarkRead(n._id)}
+              >
+                {content}
+              </Link>
+            ) : n.payload?.url ? (
+              <Link
+                key={n._id}
+                href={n.payload.url}
                 onClick={() => !n.isRead && handleMarkRead(n._id)}
               >
                 {content}

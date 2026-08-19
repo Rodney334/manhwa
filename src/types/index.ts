@@ -125,7 +125,8 @@ export type NotificationType =
   | "submission_approved"
   | "submission_rejected"
   | "account_action"
-  | "system";
+  | "system"
+  | "wrapped_ready";
 
 export interface NotificationPayload {
   title?: string;

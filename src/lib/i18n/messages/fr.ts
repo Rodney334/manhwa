@@ -379,6 +379,8 @@ const fr = {
       accountActionMessage: "Une action administrative a été appliquée à ton compte.",
       systemTitle: "ManhwaList",
       systemMessage: "Notification de la plateforme.",
+      wrappedReadyTitle: "Ton bilan est prêt",
+      wrappedReadyMessage: "Découvre ce que tu as lu — chapitres, série préférée, série de jours.",
     },
   },
   profile: {
