@@ -57,8 +57,18 @@ export interface TopManhwaEntry {
   followers: number;
   avgScore: number;
   title: string;
+  adminLabel: string | null;
   slug: string;
   totalChapters: number;
+}
+
+export interface ManhwaReader {
+  userId: string;
+  username: string;
+  status: string;
+  currentChapter: number;
+  score?: number;
+  lastReadAt?: string;
 }
 
 export interface TopContributor {
@@ -154,6 +164,23 @@ export const adminService = {
         reviewedAt?: string;
       }>
     >(`/api/v1/admin/users/${id}/submissions`, { params });
+  },
+  getSettings() {
+    return api.get<{ siteName: string | null }>("/api/v1/admin/settings");
+  },
+  updateSettings(data: { siteName: string | null }) {
+    return api.patch<{ siteName: string | null }>("/api/v1/admin/settings", data);
+  },
+  setManhwaAdminLabel(manhwaId: string, adminLabel: string | null) {
+    return api.patch<{ title: string; adminLabel: string | null }>(
+      `/api/v1/admin/manhwa/${manhwaId}/label`,
+      { adminLabel },
+    );
+  },
+  manhwaReaders(manhwaId: string) {
+    return api
+      .get<{ items: ManhwaReader[] }>(`/api/v1/admin/manhwa/${manhwaId}/readers`)
+      .then((res) => res.items);
   },
   // NOTE : le backend ne renvoie PAS le compte mis à jour ici, seulement un
   // message de confirmation. Le front doit mettre à jour son état localement.

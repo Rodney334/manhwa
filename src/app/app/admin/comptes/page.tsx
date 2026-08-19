@@ -2,180 +2,453 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { adminService } from "@/lib/services/admin.service";
-import { EmptyState, Spinner, StatusBadge } from "@/components/ui/Primitives";
+import { adminService, type AdminDashboard, type ManhwaReader } from "@/lib/services/admin.service";
+import { Spinner } from "@/components/ui/Primitives";
+import { READING_STATUS_LABELS } from "@/lib/utils/format";
 import { toast } from "@/lib/stores/toast.store";
-import { useTranslations } from "@/lib/i18n/useTranslations";
-import type { AccountStatus, Role, User } from "@/types";
-import { Users } from "lucide-react";
+import { useAuthStore } from "@/lib/stores/auth.store";
+import type { ReadingStatus } from "@/types";
+import { Users, BookOpen, TrendingUp, Star, Activity, Pencil, Check, X } from "lucide-react";
 
-export default function ComptesPage() {
-  const t = useTranslations("admin").accounts;
-  const accountStatus = useTranslations("common").accountStatus;
-  const [users, setUsers] = useState<User[] | null>(null);
-  const [search, setSearch] = useState("");
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  async function load() {
-    try {
-      const res = await adminService.users({ pageSize: 50, search: search || undefined });
-      setUsers(res.items);
-    } catch {
-      toast.error(t.loadError);
-      setUsers([]);
-    }
-  }
+export default function AdminOverviewPage() {
+  const isAdmin = useAuthStore((s) => s.user?.role === "admin");
+  const [data, setData] = useState<AdminDashboard | null>(null);
+  const [erreur, setErreur] = useState(false);
+  const [siteName, setSiteName] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
+  const [labelInput, setLabelInput] = useState("");
+  const [readersFor, setReadersFor] = useState<{ manhwaId: string; title: string } | null>(null);
+  const [readers, setReaders] = useState<ManhwaReader[] | null>(null);
 
   useEffect(() => {
-    const timeout = setTimeout(load, 300);
-    return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+    adminService
+      .dashboard()
+      .then(setData)
+      .catch(() => {
+        setErreur(true);
+        toast.error("Impossible de charger la vue d'ensemble.");
+      });
 
-  // Le backend ne renvoie pas le compte mis à jour sur ces deux routes,
-  // seulement un message de confirmation — on applique donc le changement
-  // localement une fois la requête confirmée en succès.
+    adminService
+      .getSettings()
+      .then((res) => setSiteName(res.siteName))
+      .catch(() => {
+        // silencieux : le nom par défaut reste affiché
+      });
+  }, []);
 
-  async function handleStatus(user: User, status: AccountStatus) {
-    const reason = window.prompt(
-      t.statusReasonPrompt
-        .replace("{action}", accountStatus[status].toLowerCase())
-        .replace("{username}", user.username),
-    );
-    if (!reason || reason.trim().length < 5) {
-      if (reason !== null) toast.error(t.reasonTooShort);
-      return;
-    }
-    setBusyId(user._id);
+  function startEditingName() {
+    setNameInput(siteName ?? "");
+    setEditingName(true);
+  }
+
+  async function saveSiteName() {
+    const trimmed = nameInput.trim();
+    setSavingName(true);
     try {
-      await adminService.setUserStatus(user._id, status, reason.trim());
-      setUsers(
-        (prev) => prev?.map((u) => (u._id === user._id ? { ...u, status, statusReason: reason.trim() } : u)) ?? prev,
+      const res = await adminService.updateSettings({ siteName: trimmed || null });
+      setSiteName(res.siteName);
+      setEditingName(false);
+      toast.success(trimmed ? "Nom mis à jour." : "Nom par défaut restauré.");
+    } catch {
+      toast.error("Échec de la mise à jour du nom.");
+    } finally {
+      setSavingName(false);
+    }
+  }
+
+  async function saveManhwaLabel(manhwaId: string) {
+    const trimmed = labelInput.trim();
+    try {
+      const res = await adminService.setManhwaAdminLabel(manhwaId, trimmed || null);
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              topManhwa: prev.topManhwa.map((m) =>
+                m.manhwaId === manhwaId ? { ...m, adminLabel: res.adminLabel } : m,
+              ),
+            }
+          : prev,
       );
-      toast.success(t.statusUpdated);
+      setEditingLabelId(null);
+      toast.success(trimmed ? "Alias enregistré." : "Alias retiré.");
     } catch {
-      toast.error(t.statusUpdateError);
-    } finally {
-      setBusyId(null);
+      toast.error("Échec de l'enregistrement de l'alias.");
     }
   }
 
-  async function handleRole(user: User) {
-    const newRole: Role = user.role === "admin" ? "user" : "admin";
-    if (!window.confirm(t.confirmRoleChange.replace("{username}", user.username).replace("{role}", newRole))) {
-      return;
-    }
-    setBusyId(user._id);
+  async function openReaders(manhwaId: string, title: string) {
+    setReadersFor({ manhwaId, title });
+    setReaders(null);
     try {
-      await adminService.setUserRole(user._id, newRole);
-      setUsers((prev) => prev?.map((u) => (u._id === user._id ? { ...u, role: newRole } : u)) ?? prev);
-      toast.success(t.roleUpdated);
+      const items = await adminService.manhwaReaders(manhwaId);
+      setReaders(items);
     } catch {
-      toast.error(t.roleUpdateError);
-    } finally {
-      setBusyId(null);
+      toast.error("Impossible de charger les lecteurs.");
+      setReaders([]);
     }
   }
+
+  if (erreur) {
+    return (
+      <p className="text-[13.5px] text-txt3 py-24 text-center">
+        La vue d&apos;ensemble n&apos;a pas pu être chargée.
+      </p>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex justify-center py-24">
+        <Spinner />
+      </div>
+    );
+  }
+
+  const byStatus = data.library?.byStatus ?? [];
+  const maxStatus = Math.max(1, ...byStatus.map((s) => s.count));
+  const topManhwa = data.topManhwa ?? [];
+  const topContributors = data.topContributors ?? [];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-9 max-w-4xl">
       <div>
-        <h1 className="font-display text-[28px] font-normal">{t.title}</h1>
-        <p className="text-[13.5px] text-txt3 mt-1">{t.subtitle}</p>
+        {!editingName && (
+          <div className="flex items-center gap-2 group">
+            <h1 className="font-display text-[28px] font-normal">
+              {siteName || "Vue d'ensemble"}
+            </h1>
+            {isAdmin && (
+              <button
+                onClick={startEditingName}
+                className="opacity-0 group-hover:opacity-100 text-txt3 hover:text-vert transition-all p-1"
+                aria-label="Modifier le nom"
+              >
+                <Pencil size={14} />
+              </button>
+            )}
+          </div>
+        )}
+
+        {editingName && (
+          <div className="flex items-center gap-2">
+            <input
+              autoFocus
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveSiteName();
+                if (e.key === "Escape") setEditingName(false);
+              }}
+              maxLength={60}
+              placeholder="Vue d'ensemble"
+              className="font-display text-[28px] font-normal bg-transparent border-b border-vert/40 outline-none focus:border-vert transition-colors max-w-md"
+            />
+            <button
+              onClick={saveSiteName}
+              disabled={savingName}
+              className="text-vert hover:brightness-125 transition-all p-1 disabled:opacity-60"
+              aria-label="Enregistrer"
+            >
+              <Check size={16} />
+            </button>
+            <button
+              onClick={() => setEditingName(false)}
+              className="text-txt3 hover:text-txt transition-colors p-1"
+              aria-label="Annuler"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        <p className="text-[13.5px] text-txt3 mt-1">
+          Ce qui se passe réellement sur la plateforme, en un coup d&apos;œil.
+        </p>
       </div>
 
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={t.searchPlaceholder}
-        className="max-w-xs bg-sur border border-ligne rounded-lg px-3.5 py-2 text-[13px] outline-none focus:border-vert/50 transition-colors"
-      />
+      {/* ── Indicateurs clés ─────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <BigStat
+          icon={<Users size={16} />}
+          label="Comptes"
+          value={data.accounts?.total ?? 0}
+          sub={`+${data.accounts?.newLast30Days ?? 0} ce mois-ci`}
+        />
+        <BigStat
+          icon={<Activity size={16} />}
+          label="Lecteurs actifs (7j)"
+          value={data.engagement?.readersLast7Days ?? 0}
+          sub={`${data.engagement?.readersLast30Days ?? 0} sur 30 jours`}
+          accent="or"
+        />
+        <BigStat
+          icon={<BookOpen size={16} />}
+          label="Chapitres lus"
+          value={data.library?.chaptersRead ?? 0}
+          sub={`${data.library?.totalEntries ?? 0} entrées en bibliothèque`}
+        />
+        <BigStat
+          icon={<TrendingUp size={16} />}
+          label="Catalogue"
+          value={data.catalog?.approved ?? 0}
+          sub={`${data.catalog?.pending ?? 0} en attente de modération`}
+        />
+      </div>
 
-      {users === null && (
-        <div className="flex justify-center py-20">
-          <Spinner />
+      {/* ── Engagement : pourquoi "lecteurs actifs" ≠ "comptes actifs" ── */}
+      <div className="rounded-xl border border-ligne bg-sur/60 px-4 py-3.5 flex items-start gap-3">
+        <Activity size={15} className="text-or mt-0.5 shrink-0" />
+        <p className="text-[12.5px] text-txt2 leading-relaxed">
+          <span className="text-txt font-medium">{data.accounts?.active ?? 0}</span> comptes ne sont
+          pas suspendus, mais seuls{" "}
+          <span className="text-or font-medium">{data.engagement?.readersLast30Days ?? 0}</span> ont
+          réellement fait avancer une lecture ces 30 derniers jours — c&apos;est ce dernier chiffre
+          qui reflète l&apos;usage réel.
+        </p>
+      </div>
+
+      {/* ── Répartition des lectures par statut ─────────────────────── */}
+      {byStatus.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">
+            Bibliothèques — répartition par statut
+          </h2>
+          <div className="flex flex-col gap-2.5">
+            {byStatus.map((s) => (
+              <div key={s._id} className="flex items-center gap-3">
+                <span className="w-28 text-[12.5px] text-txt2 shrink-0">
+                  {READING_STATUS_LABELS[s._id as ReadingStatus] ?? s._id}
+                </span>
+                <div className="flex-1 h-5 rounded-lg bg-sur2 overflow-hidden">
+                  <div
+                    className="h-full bg-vert/70 rounded-lg transition-[width] duration-500"
+                    style={{ width: `${(s.count / maxStatus) * 100}%` }}
+                  />
+                </div>
+                <span className="w-10 text-right text-[12.5px] font-mono text-txt3">{s.count}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {users !== null && users.length === 0 && (
-        <EmptyState icon={<Users size={26} />} title={t.emptyTitle} />
-      )}
+      {/* ── Titres les plus suivis ───────────────────────────────────── */}
+      {topManhwa.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">
+            Titres les plus suivis
+          </h2>
+          <div className="flex flex-col">
+            {topManhwa.slice(0, 10).map((m, i) => (
+              <div
+                key={m.manhwaId}
+                className="flex items-center gap-3 py-2.5 border-b border-ligne text-[13px] group"
+              >
+                <span className="w-5 text-txt3 font-mono text-[11px] shrink-0">{i + 1}</span>
 
-      {users !== null && users.length > 0 && (
-        <div className="overflow-x-auto -mx-2">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wider text-txt3 font-mono">
-                <th className="px-2 py-2 font-normal">{t.colAccount}</th>
-                <th className="px-2 py-2 font-normal">{t.colRole}</th>
-                <th className="px-2 py-2 font-normal">{t.colStatus}</th>
-                <th className="px-2 py-2 font-normal text-right">{t.colActions}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u._id} className="border-t border-ligne">
-                  <td className="px-2 py-2.5">
-                    <Link
-                      href={`/app/admin/comptes/${u._id}`}
-                      className="font-medium hover:text-vert transition-colors"
-                    >
-                      {u.username}
-                    </Link>
-                    <div className="text-txt3 text-[11.5px]">{u.email}</div>
-                  </td>
-                  <td className="px-2 py-2.5">
-                    <button
-                      onClick={() => handleRole(u)}
-                      disabled={busyId === u._id}
-                      className="text-[11.5px] px-2 py-0.5 rounded-full bg-sur3 text-txt2 hover:text-vert transition-colors disabled:opacity-60"
-                    >
-                      {u.role}
-                    </button>
-                  </td>
-                  <td className="px-2 py-2.5">
-                    <StatusBadge
-                      status={u.status === "active" ? "reading" : "dropped"}
-                      label={accountStatus[u.status]}
+                {editingLabelId === m.manhwaId ? (
+                  <div className="flex-1 flex items-center gap-2 min-w-0">
+                    <input
+                      autoFocus
+                      value={labelInput}
+                      onChange={(e) => setLabelInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveManhwaLabel(m.manhwaId);
+                        if (e.key === "Escape") setEditingLabelId(null);
+                      }}
+                      maxLength={80}
+                      placeholder={m.title}
+                      className="flex-1 min-w-0 bg-transparent border-b border-vert/40 outline-none focus:border-vert transition-colors text-[13px]"
                     />
-                  </td>
-                  <td className="px-2 py-2.5 text-right">
-                    <div className="flex justify-end gap-1.5">
-                      {u.status !== "active" && (
-                        <button
-                          onClick={() => handleStatus(u, "active")}
-                          disabled={busyId === u._id}
-                          className="text-[11.5px] text-txt3 hover:text-vert transition-colors px-1.5 disabled:opacity-60"
-                        >
-                          {t.activate}
-                        </button>
-                      )}
-                      {u.status !== "suspended" && (
-                        <button
-                          onClick={() => handleStatus(u, "suspended")}
-                          disabled={busyId === u._id}
-                          className="text-[11.5px] text-txt3 hover:text-or transition-colors px-1.5 disabled:opacity-60"
-                        >
-                          {t.suspend}
-                        </button>
-                      )}
-                      {u.status !== "banned" && (
-                        <button
-                          onClick={() => handleStatus(u, "banned")}
-                          disabled={busyId === u._id}
-                          className="text-[11.5px] text-txt3 hover:text-rouge transition-colors px-1.5 disabled:opacity-60"
-                        >
-                          {t.ban}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <button
+                      onClick={() => saveManhwaLabel(m.manhwaId)}
+                      className="text-vert hover:brightness-125 transition-all shrink-0"
+                      aria-label="Enregistrer l'alias"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      onClick={() => setEditingLabelId(null)}
+                      className="text-txt3 hover:text-txt transition-colors shrink-0"
+                      aria-label="Annuler"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                    <Link
+                      href={`/app/manhwa/${m.slug}`}
+                      className="truncate hover:text-vert transition-colors"
+                      title={m.adminLabel ? m.title : undefined}
+                    >
+                      {m.adminLabel || m.title}
+                    </Link>
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          setEditingLabelId(m.manhwaId);
+                          setLabelInput(m.adminLabel ?? "");
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-txt3 hover:text-vert transition-all shrink-0"
+                        aria-label="Modifier l'alias interne"
+                      >
+                        <Pencil size={12} />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {m.avgScore > 0 && (
+                  <span className="flex items-center gap-1 text-[11.5px] text-or font-mono shrink-0">
+                    <Star size={11} className="fill-or" /> {m.avgScore.toFixed(1)}
+                  </span>
+                )}
+
+                <button
+                  onClick={() => openReaders(m.manhwaId, m.adminLabel || m.title)}
+                  className="text-[11.5px] text-txt3 hover:text-vert font-mono w-24 text-right shrink-0 transition-colors"
+                >
+                  {m.followers} lecteur{m.followers > 1 ? "s" : ""}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
+
+      {/* ── Modale : lecteurs d'une fiche ───────────────────────────── */}
+      {readersFor && (
+        <div
+          className="fixed inset-0 z-50 bg-fond/80 backdrop-blur-sm flex items-center justify-center px-4"
+          onClick={() => setReadersFor(null)}
+        >
+          <div
+            className="bg-sur border border-ligne rounded-2xl w-full max-w-sm max-h-[70vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-ligne">
+              <h3 className="font-display text-[16px] font-normal truncate pr-3">
+                {readersFor.title}
+              </h3>
+              <button
+                onClick={() => setReadersFor(null)}
+                className="text-txt3 hover:text-txt transition-colors shrink-0"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              {readers === null && (
+                <div className="flex justify-center py-8">
+                  <Spinner />
+                </div>
+              )}
+              {readers !== null && readers.length === 0 && (
+                <p className="text-[12.5px] text-txt3 text-center py-8">Aucun lecteur.</p>
+              )}
+              {readers !== null &&
+                readers.map((r) => (
+                  <div
+                    key={r.userId}
+                    className="flex items-center gap-3 px-5 py-2.5 border-b border-ligne last:border-0 text-[13px]"
+                  >
+                    <span className="flex-1 truncate">{r.username}</span>
+                    <span className="text-[11px] text-txt3 font-mono">
+                      {READING_STATUS_LABELS[r.status as ReadingStatus] ?? r.status}
+                    </span>
+                    <span className="text-[11px] text-txt3 font-mono w-10 text-right">
+                      ch.{r.currentChapter}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Contributeurs les plus actifs ────────────────────────────── */}
+      {topContributors.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">
+            Contributeurs les plus actifs
+          </h2>
+          <div className="flex flex-col">
+            {topContributors.slice(0, 8).map((c) => (
+              <div
+                key={c._id}
+                className="flex items-center gap-3 py-2.5 border-b border-ligne text-[13px]"
+              >
+                <span className="flex-1 truncate">{c.username}</span>
+                <span className="text-[11.5px] text-vert font-mono">
+                  {c.contributionStats?.approved ?? 0} validées
+                </span>
+                <span className="text-[11.5px] text-txt3 font-mono w-16 text-right">
+                  {c.contributionStats?.submitted ?? 0} soumises
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Trajectoire d'autonomie (déjà calculée côté backend) ────── */}
+      <div className="flex flex-col gap-3">
+        <h2 className="text-[13px] uppercase tracking-wider text-txt3 font-mono">
+          Autonomie du catalogue
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <MiniStat
+            label="Catalogue interne"
+            value={`${data.autonomy?.catalogAutonomyRate ?? 0}%`}
+          />
+          <MiniStat label="Couvertures locales" value={`${data.autonomy?.localCoverRate ?? 0}%`} />
+          <MiniStat label="Fiches vérifiées" value={`${data.autonomy?.verifiedRate ?? 0}%`} />
+          <MiniStat
+            label="Contributions (30j)"
+            value={String(data.autonomy?.approvedContributionsLast30Days ?? 0)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BigStat({
+  icon,
+  label,
+  value,
+  sub,
+  accent = "vert",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  sub?: string;
+  accent?: "vert" | "or";
+}) {
+  return (
+    <div className="rounded-xl border border-ligne bg-sur/60 px-4 py-3.5">
+      <div className={`flex items-center gap-1.5 ${accent === "or" ? "text-or" : "text-vert"}`}>
+        {icon}
+      </div>
+      <div className="text-[24px] font-mono font-medium mt-1.5">{value.toLocaleString("fr-FR")}</div>
+      <div className="text-[11.5px] text-txt3 mt-0.5">{label}</div>
+      {sub && <div className="text-[10.5px] text-txt3 mt-1 font-mono">{sub}</div>}
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-ligne bg-sur/60 px-3.5 py-3">
+      <div className="text-[17px] font-mono font-medium text-txt">{value}</div>
+      <div className="text-[11px] text-txt3 mt-0.5">{label}</div>
     </div>
   );
 }
